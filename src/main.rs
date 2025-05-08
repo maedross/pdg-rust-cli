@@ -120,12 +120,15 @@ impl SequenceOfPlay {
     fn round_runner(&mut self, card: &Card) {
         println!("\nCurrent Card: {} ({})", card.name, card.number);
         let first_actions = vec![
-        Action::Pass,
-        Action::FirstFactionCommandOnly,
-        Action::FirstFactionCommandPlusFeat,
-        Action::FirstFactionEvent,
-    ];
-        self.take_turn(VecDeque::from(card.eligibility_order.clone()), &first_actions);
+            Action::Pass,
+            Action::FirstFactionCommandOnly,
+            Action::FirstFactionCommandPlusFeat,
+            Action::FirstFactionEvent,
+        ];
+        self.take_turn(
+            VecDeque::from(card.eligibility_order.clone()),
+            &first_actions,
+        );
     }
 
     fn take_turn(&mut self, mut eligibility_order: VecDeque<Faction>, actions: &Vec<Action>) {
@@ -206,6 +209,13 @@ impl Default for SequenceOfPlay {
     }
 }
 
+struct BattleForces {
+    attacking_force: Vec<Forces>,
+    defending_force: Vec<Forces>,
+    evaded_forces: Vec<Forces>,
+    trapping_forces: Vec<Forces>,
+}
+
 fn main() {
     // Reveal next card
     // If epoch, swap with current and do epoch round
@@ -262,7 +272,7 @@ fn main() {
     let mut sequence_of_play: SequenceOfPlay = SequenceOfPlay {
         ..Default::default()
     };
-    
+
     let (curr_card, new_card): (Card, Card) = setup(&mut deck);
     sequence_of_play.round_runner(&curr_card);
     sequence_of_play.round_runner(&new_card);
@@ -273,7 +283,6 @@ fn setup(deck: &mut VecDeque<Card>) -> (Card, Card) {
     let next_card: Card = deck.pop_front().unwrap();
     return (curr_card, next_card);
 }
-
 
 fn event() {}
 
@@ -290,7 +299,21 @@ impl fmt::Display for Faction {
     }
 }
 
-fn Battle(attacker: Faction, defender: Faction, location: Space, fragmentation: bool) {
+/*
+    if forces include raiders
+        if in home terrain evade (3/6) or ambush (2/6)
+        if in rough terrain evade (2/6)
+        if in clear terrain evade (1/6)
+        or don't
+    if forces include Warbands, Foederati OR (Comitates or Militia) WITH Cymbrogi
+        may ambush (4/6) or evade (2/6)
+*/
+
+fn checkEvadeAmbush(terrain: &Terrain, forces: &Vec<Forces>) {
+    todo!()
+}
+
+fn battle(attacker: Faction, defender: Faction, space: Space, fragmentation: bool) {
     /*
        Required Starting Information
 
@@ -326,14 +349,38 @@ fn Battle(attacker: Faction, defender: Faction, location: Space, fragmentation: 
        PRE-BATTLE
 
        for attackers and defenders
-           if forces include raiders
-               if in home terrain evade (3/6) or ambush (2/6)
-               if in rough terrain evade (2/6)
-               if in clear terrain evade (1/6)
-               or don't
-           if forces include Warbands, Foederati OR (Comitates or Militia) WITH Cymbrogi
-               may ambush (4/6) or evade (2/6)
+
     */
+    match space {
+        Space::Land {
+            terrain,
+            control: _,
+            population: _,
+            prosperity: _,
+            civitates_pieces,
+            dux_pieces,
+            saxon_pieces,
+            scotti_pieces,
+            stronghold_sites: _,
+        } => {
+            match attacker {
+                Faction::Civitates => checkEvadeAmbush(&terrain, &civitates_pieces),
+                Faction::Dux => checkEvadeAmbush(&terrain, &dux_pieces),
+                Faction::Saxons => checkEvadeAmbush(&terrain, &saxon_pieces),
+                Faction::Scotti => checkEvadeAmbush(&terrain, &scotti_pieces),
+            }
+
+            match defender {
+                Faction::Civitates => checkEvadeAmbush(&terrain, &civitates_pieces),
+                Faction::Dux => checkEvadeAmbush(&terrain, &dux_pieces),
+                Faction::Saxons => checkEvadeAmbush(&terrain, &saxon_pieces),
+                Faction::Scotti => checkEvadeAmbush(&terrain, &scotti_pieces),
+            }
+        }
+        _ => panic!(
+            "Why are you trying to fight a land in the middle of the sea? Don't be like Caligula"
+        ),
+    }
 
     /*
        Field Battle
