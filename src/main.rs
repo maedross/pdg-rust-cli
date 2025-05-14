@@ -1,7 +1,6 @@
 use dialoguer::Select;
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
-use std::io;
 
 enum Action {
     Pass,
@@ -27,6 +26,7 @@ impl fmt::Display for Action {
     }
 }
 
+#[derive(Eq, Hash, PartialEq, Clone, Copy)]
 enum Terrain {
     Clear,
     Fens,
@@ -39,15 +39,25 @@ enum Space {
         control: Control,
         population: u8,
         prosperity: Vec<u8>,
-        civitates_pieces: Vec<Forces>,
-        dux_pieces: Vec<Forces>,
-        saxon_pieces: Vec<Forces>,
-        scotti_pieces: Vec<Forces>,
+        civitates_pieces: Vec<Unit>,
+        dux_pieces: Vec<Unit>,
+        saxon_pieces: Vec<Unit>,
+        scotti_pieces: Vec<Unit>,
         stronghold_sites: Vec<StrongholdSite>,
     },
     Sea,
 }
 
+struct Rules {
+    piece_types: Vec<Unit>,
+    stronghold_types: Vec<Stronghold>,
+    terrain_interactions: HashMap<(Unit, Terrain), Vec<PreBattle>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+struct Unit {
+    name: String,
+}
 struct Road {}
 
 struct StrongholdSite {
@@ -70,22 +80,27 @@ enum Stronghold {
     ScottiSettlement,
 }
 
-enum Forces {
-    Militia,
-    Comitates,
-    Cavalry,
-    SaxonFoederati(Faction),
-    ScottiFoederati(Faction),
-    SaxonWarband,
-    ScottiWarband,
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 enum Faction {
     Civitates,
     Dux,
     Saxons,
     Scotti,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum PreBattle {
+    Ambush(u8),
+    Evade(u8),
+}
+
+impl fmt::Display for PreBattle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            PreBattle::Ambush(_) => write!(f, "Ambush"),
+            PreBattle::Evade(_) => write!(f, "Evade"),
+        }
+    }
 }
 
 enum Control {
@@ -210,10 +225,10 @@ impl Default for SequenceOfPlay {
 }
 
 struct BattleForces {
-    attacking_force: Vec<Forces>,
-    defending_force: Vec<Forces>,
-    evaded_forces: Vec<Forces>,
-    trapping_forces: Vec<Forces>,
+    attacking_force: Vec<Unit>,
+    defending_force: Vec<Unit>,
+    evaded_forces: Vec<Unit>,
+    trapping_forces: Vec<Unit>,
 }
 
 fn main() {
@@ -221,30 +236,6 @@ fn main() {
     // If epoch, swap with current and do epoch round
     // Else repeat
     // If no next card, do final scoring
-    let mut deck: VecDeque<Card> = VecDeque::from(vec![
-        Card {
-            number: 43,
-            name: "Omens".to_string(),
-            eligibility_order: vec![
-                Faction::Saxons,
-                Faction::Civitates,
-                Faction::Dux,
-                Faction::Scotti,
-            ],
-            card_type: CardType::Event,
-        },
-        Card {
-            number: 44,
-            name: "Lindsey".to_string(),
-            eligibility_order: vec![
-                Faction::Saxons,
-                Faction::Civitates,
-                Faction::Dux,
-                Faction::Scotti,
-            ],
-            card_type: CardType::Event,
-        },
-    ]);
 
     let corieltauvi = Space::Land {
         terrain: Terrain::Fens,
@@ -273,15 +264,141 @@ fn main() {
         ..Default::default()
     };
 
-    let (curr_card, new_card): (Card, Card) = setup(&mut deck);
+    let (curr_card, new_card, deck, rules): (Card, Card, VecDeque<Card>, Rules) = setup();
     sequence_of_play.round_runner(&curr_card);
     sequence_of_play.round_runner(&new_card);
 }
 
-fn setup(deck: &mut VecDeque<Card>) -> (Card, Card) {
+fn setup() -> (Card, Card, VecDeque<Card>, Rules) {
+    let mut deck: VecDeque<Card> = load_cards();
+
     let curr_card: Card = deck.pop_front().unwrap();
     let next_card: Card = deck.pop_front().unwrap();
-    return (curr_card, next_card);
+
+    let (mut units, mut interactions) = load_units();
+    let rules: Rules = Rules {
+        piece_types: units,
+        stronghold_types: vec![],
+        terrain_interactions: interactions,
+    };
+    return (curr_card, next_card, deck, rules);
+}
+
+fn load_cards() -> VecDeque<Card> {
+    VecDeque::from(vec![
+        Card {
+            number: 43,
+            name: "Omens".to_string(),
+            eligibility_order: vec![
+                Faction::Saxons,
+                Faction::Civitates,
+                Faction::Dux,
+                Faction::Scotti,
+            ],
+            card_type: CardType::Event,
+        },
+        Card {
+            number: 44,
+            name: "Lindsey".to_string(),
+            eligibility_order: vec![
+                Faction::Saxons,
+                Faction::Civitates,
+                Faction::Dux,
+                Faction::Scotti,
+            ],
+            card_type: CardType::Event,
+        },
+    ])
+}
+
+fn load_units() -> (Vec<Unit>, HashMap<(Unit, Terrain), Vec<PreBattle>>) {
+    let militia: Unit = Unit {
+        name: String::from("Militia"),
+    };
+    let comitates: Unit = Unit {
+        name: String::from("Comitates"),
+    };
+    let cavalry: Unit = Unit {
+        name: String::from("Cavalry"),
+    };
+    let saxon_raider: Unit = Unit {
+        name: String::from("Raider"),
+    };
+    let saxon_warband: Unit = Unit {
+        name: String::from("Warband"),
+    };
+    let scotti_raider: Unit = Unit {
+        name: String::from("Raider"),
+    };
+    let scotti_warband: Unit = Unit {
+        name: String::from("Warband"),
+    };
+
+    let mut terrain_interactions: HashMap<(Unit, Terrain), Vec<PreBattle>> = HashMap::new();
+    terrain_interactions.insert(
+        (saxon_raider.clone(), Terrain::Fens),
+        vec![PreBattle::Evade(4), PreBattle::Ambush(5)],
+    );
+    terrain_interactions.insert(
+        (saxon_raider.clone(), Terrain::Hills),
+        vec![PreBattle::Evade(5)],
+    );
+    terrain_interactions.insert(
+        (saxon_raider.clone(), Terrain::Clear),
+        vec![PreBattle::Evade(6)],
+    );
+
+    terrain_interactions.insert(
+        (saxon_warband.clone(), Terrain::Fens),
+        vec![PreBattle::Evade(5), PreBattle::Ambush(3)],
+    );
+
+    terrain_interactions.insert(
+        (scotti_raider.clone(), Terrain::Hills),
+        vec![PreBattle::Evade(4), PreBattle::Ambush(5)],
+    );
+    terrain_interactions.insert(
+        (scotti_raider.clone(), Terrain::Fens),
+        vec![PreBattle::Evade(5)],
+    );
+    terrain_interactions.insert(
+        (scotti_raider.clone(), Terrain::Clear),
+        vec![PreBattle::Evade(6)],
+    );
+
+    terrain_interactions.insert(
+        (scotti_warband.clone(), Terrain::Hills),
+        vec![PreBattle::Evade(5), PreBattle::Ambush(3)],
+    );
+
+    let unit_types: Vec<Unit> = vec![
+        militia.clone(),
+        comitates.clone(),
+        cavalry.clone(),
+        saxon_raider.clone(),
+        saxon_warband.clone(),
+        scotti_raider.clone(),
+        scotti_warband.clone(),
+    ];
+
+    let rules: Rules = Rules {
+        piece_types: unit_types.clone(),
+        stronghold_types: vec![],
+        terrain_interactions: terrain_interactions.clone(),
+    };
+    check_evade_ambush(
+        &rules,
+        &Terrain::Fens,
+        &vec![
+            militia.clone(),
+            saxon_raider.clone(),
+            scotti_warband.clone(),
+            saxon_warband.clone(),
+            cavalry.clone(),
+        ],
+    );
+
+    (unit_types, terrain_interactions)
 }
 
 fn event() {}
@@ -299,127 +416,148 @@ impl fmt::Display for Faction {
     }
 }
 
-/*
-    if forces include raiders
-        if in home terrain evade (3/6) or ambush (2/6)
-        if in rough terrain evade (2/6)
-        if in clear terrain evade (1/6)
-        or don't
-    if forces include Warbands, Foederati OR (Comitates or Militia) WITH Cymbrogi
-        may ambush (4/6) or evade (2/6)
-*/
-
-fn checkEvadeAmbush(terrain: &Terrain, forces: &Vec<Forces>) {
-    todo!()
-}
-
-fn battle(attacker: Faction, defender: Faction, space: Space, fragmentation: bool) {
-    /*
-       Required Starting Information
-
-       Fragmentation Status
-       Attacking player
-       Defending player(s)
-       Space
-       Attacking force/is this from a Raid
-       Feats: Retaliate, Shield Wall, Surprise, Reinforce, Ravage
-    */
-
-    /*
-       Required Tracking
-       Are Cavalry fighting?
-       Are Barbarians fighting?
-       How many pieces does each side lose?
-       Did a side survive?
-       Was a stronghold Assaulted?
-       Were units chosen to Siege a Stronghold?
-       Plunder capacity
-    */
-
-    // If not Fragmentation or Dux vs Civis, Britons fight together
-    // Raid battle only fights with placed Raiders
-
-    /*
-       Pre-Battle
-       Raiders may Evade in all Terrain or Ambush in Home Terrain
-       Warbands, Foederati, Comitates, Militia may Evade or Ambush in Home Terrain
-    */
-
-    /*
-       PRE-BATTLE
-
-       for attackers and defenders
-
-    */
-    match space {
-        Space::Land {
-            terrain,
-            control: _,
-            population: _,
-            prosperity: _,
-            civitates_pieces,
-            dux_pieces,
-            saxon_pieces,
-            scotti_pieces,
-            stronghold_sites: _,
-        } => {
-            match attacker {
-                Faction::Civitates => checkEvadeAmbush(&terrain, &civitates_pieces),
-                Faction::Dux => checkEvadeAmbush(&terrain, &dux_pieces),
-                Faction::Saxons => checkEvadeAmbush(&terrain, &saxon_pieces),
-                Faction::Scotti => checkEvadeAmbush(&terrain, &scotti_pieces),
-            }
-
-            match defender {
-                Faction::Civitates => checkEvadeAmbush(&terrain, &civitates_pieces),
-                Faction::Dux => checkEvadeAmbush(&terrain, &dux_pieces),
-                Faction::Saxons => checkEvadeAmbush(&terrain, &saxon_pieces),
-                Faction::Scotti => checkEvadeAmbush(&terrain, &scotti_pieces),
+impl Rules {
+    fn check_evade_ambush(rules: &Rules, terrain: &Terrain, forces: &Vec<Unit>) {
+        /*
+           For each player
+               For each group of forces
+                   Table lookup? Would be nice. If a global table, could then just update the table when Cymbrogi or one of the nasty events is played
+                   Table would need
+                       One Piece
+                       Many Terrain
+                       One Evade
+                           One Dice
+                       One Withdraw
+                           One Dice
+                   A piece can be a struct, and a rules struct can instantiate the particulars
+        */
+        for unit in forces {
+            match rules.terrain_interactions.get(&(unit.clone(), *terrain)) {
+                Some(tactics) => {
+                    println!("{} may:", unit.name);
+                    for t in tactics {
+                        println!("{}", t);
+                    }
+                }
+                None => {}
             }
         }
-        _ => panic!(
-            "Why are you trying to fight a land in the middle of the sea? Don't be like Caligula"
-        ),
     }
 
-    /*
-       Field Battle
-       If all defending units Evaded, skip
-       Militia and Raiders are halved
-       1. Trap
-       2. Defenders Withdraw
-       3. Charge/Ambush
-       4. Melee
-       5. Harass
-    */
+    fn battle(
+        attacker: Faction,
+        defender: Faction,
+        space: Space,
+        fragmentation: bool,
+        rules: &Rules,
+    ) {
+        /*
+           Required Starting Information
 
-    /*
-       Assault
-       If all defenders Evaded, Withdrew, or died
-       Target Strongholds 1 by 1
-       1. Coup de Main
-       2. Escalade
-       3. Storm
-       4. If all defending units + garrison killed and attackers remain, remove Stronghold
-    */
+           Fragmentation Status
+           Attacking player
+           Defending player(s)
+           Space
+           Attacking force/is this from a Raid
+           Feats: Retaliate, Shield Wall, Surprise, Reinforce, Ravage
+        */
 
-    /*
-       Battle Consequences
-       * If enemy is not pre-Frag Civis, if Cavalry fought and its side lost fewer pieces than enemy, +1 Prestige.
-            If cavalry fought and its side lost more pieces than the enemy, -1 Prestige.
-       * Each Fort or if not Frag Town removed, -2 Prestige
-       * Each Stronghold destroyed grants 2 plunder, 3 if Town. Cavalry only take plunder if Retaliate.
-            If Dux, +1 Prestige. If City, plunder all Prosperity.
-       * If a Barbarian lost fewer pieces than the enemy and survived, +1 Renown
-       * If Attacker kills units with Plunder, either distribute half rounded down among non-Cavalry attacking units,
-            or if Briton may return 1 Prosperity to the space, or if Barbarian in controlled space +1 Renown for each plunder
-    */
+        /*
+           Required Tracking
+           Are Cavalry fighting?
+           Are Barbarians fighting?
+           How many pieces does each side lose?
+           Did a side survive?
+           Was a stronghold Assaulted?
+           Were units chosen to Siege a Stronghold?
+           Plunder capacity
+        */
 
-    /*
-       Siege
-       If all defending units Evaded, Withdrew, or were removed
-       If Stronghold was not Assaulted and attacker has >= Troops as the Stronghold's Capacity,
-       defender must remove 1 unit from inside.
-       Attackers are counted for only 1 Stronghold each
-    */
+        // If not Fragmentation or Dux vs Civis, Britons fight together
+        // Raid battle only fights with placed Raiders
+
+        /*
+           Pre-Battle
+           Raiders may Evade in all Terrain or Ambush in Home Terrain
+           Warbands, Foederati, Comitates, Militia may Evade or Ambush in Home Terrain
+        */
+
+        /*
+           PRE-BATTLE
+
+           for attackers and defenders
+
+        */
+        match space {
+            Space::Land {
+                terrain,
+                control: _,
+                population: _,
+                prosperity: _,
+                civitates_pieces,
+                dux_pieces,
+                saxon_pieces,
+                scotti_pieces,
+                stronghold_sites: _,
+            } => {
+                match attacker {
+                    Faction::Civitates => check_evade_ambush(rules, &terrain, &civitates_pieces),
+                    Faction::Dux => check_evade_ambush(rules, &terrain, &dux_pieces),
+                    Faction::Saxons => check_evade_ambush(rules, &terrain, &saxon_pieces),
+                    Faction::Scotti => check_evade_ambush(rules, &terrain, &scotti_pieces),
+                }
+
+                match defender {
+                    Faction::Civitates => check_evade_ambush(rules, &terrain, &civitates_pieces),
+                    Faction::Dux => check_evade_ambush(rules, &terrain, &dux_pieces),
+                    Faction::Saxons => check_evade_ambush(rules, &terrain, &saxon_pieces),
+                    Faction::Scotti => check_evade_ambush(rules, &terrain, &scotti_pieces),
+                }
+            }
+            _ => panic!(
+                "Why are you trying to fight a land in the middle of the sea? Don't be like Caligula"
+            ),
+        }
+
+        /*
+           Field Battle
+           If all defending units Evaded, skip
+           Militia and Raiders are halved
+           1. Trap
+           2. Defenders Withdraw
+           3. Charge/Ambush
+           4. Melee
+           5. Harass
+        */
+
+        /*
+           Assault
+           If all defenders Evaded, Withdrew, or died
+           Target Strongholds 1 by 1
+           1. Coup de Main
+           2. Escalade
+           3. Storm
+           4. If all defending units + garrison killed and attackers remain, remove Stronghold
+        */
+
+        /*
+           Battle Consequences
+           * If enemy is not pre-Frag Civis, if Cavalry fought and its side lost fewer pieces than enemy, +1 Prestige.
+                If cavalry fought and its side lost more pieces than the enemy, -1 Prestige.
+           * Each Fort or if not Frag Town removed, -2 Prestige
+           * Each Stronghold destroyed grants 2 plunder, 3 if Town. Cavalry only take plunder if Retaliate.
+                If Dux, +1 Prestige. If City, plunder all Prosperity.
+           * If a Barbarian lost fewer pieces than the enemy and survived, +1 Renown
+           * If Attacker kills units with Plunder, either distribute half rounded down among non-Cavalry attacking units,
+                or if Briton may return 1 Prosperity to the space, or if Barbarian in controlled space +1 Renown for each plunder
+        */
+
+        /*
+           Siege
+           If all defending units Evaded, Withdrew, or were removed
+           If Stronghold was not Assaulted and attacker has >= Troops as the Stronghold's Capacity,
+           defender must remove 1 unit from inside.
+           Attackers are counted for only 1 Stronghold each
+        */
+    }
 }
