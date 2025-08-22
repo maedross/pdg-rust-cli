@@ -1,5 +1,6 @@
 use dialoguer::Select;
-use std::collections::{HashMap, VecDeque};
+use rand::prelude::*;
+use std::collections::VecDeque;
 use std::fmt;
 
 enum Action {
@@ -26,51 +27,79 @@ impl fmt::Display for Action {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+enum Faction {
+    Civitates,
+    Dux,
+    Saxons,
+    Scotti,
+    None,
+}
+
+#[derive(Debug, Eq, Hash, PartialEq, Clone, Copy)]
 enum Terrain {
     Clear,
     Fens,
     Hills,
     City,
 }
-enum Space {
-    Land {
-        terrain: Terrain,
-        control: Control,
-        population: u8,
-        prosperity: Vec<u8>,
-        civitates_pieces: Vec<Unit>,
-        dux_pieces: Vec<Unit>,
-        saxon_pieces: Vec<Unit>,
-        scotti_pieces: Vec<Unit>,
-        stronghold_sites: Vec<StrongholdSite>,
-    },
-    Sea,
-}
 
-struct Rules {
-    piece_types: Vec<Unit>,
-    stronghold_types: Vec<Stronghold>,
-    terrain_interactions: HashMap<(Unit, Terrain), Vec<PreBattle>>,
+#[derive(Debug, Clone)]
+struct Space {
+    terrain: Terrain,
+    control: Faction,
+    population: u8,
+    prosperity: Vec<u8>,
+    comitates: u8,
+    civitates_saxon_foederati: u8,
+    civitates_scotti_foederati: u8,
+    militia: u8,
+    cavalry: u8,
+    dux_saxon_foederati: u8,
+    dux_scotti_foederati: u8,
+    saxon_raider: u8,
+    saxon_warband: u8,
+    scotti_raider: u8,
+    scotti_warband: u8,
+    stronghold_sites: Vec<StrongholdSite>,
 }
-
+impl Default for Space {
+    fn default() -> Space {
+        Space {
+            comitates: 0,
+            civitates_saxon_foederati: 0,
+            civitates_scotti_foederati: 0,
+            militia: 0,
+            cavalry: 0,
+            dux_saxon_foederati: 0,
+            dux_scotti_foederati: 0,
+            saxon_raider: 0,
+            saxon_warband: 0,
+            scotti_raider: 0,
+            scotti_warband: 0,
+            terrain: Terrain::Clear,
+            control: Faction::None,
+            population: 0,
+            prosperity: vec![0, 0],
+            stronghold_sites: vec![],
+        }
+    }
+}
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Unit {
-    name: String,
+enum Unit {
+    Comitates,
+    CivitatesSaxonFoederati,
+    CivitatesScottiFoederati,
+    Militia,
+    Cavalry,
+    DuxSaxonFoederati,
+    DuxScottiFoederati,
+    SaxonRaider,
+    SaxonWarband,
+    ScottiRaider,
+    ScottiWarband,
 }
 struct Road {}
-
-struct StrongholdSite {
-    name: String,
-    stronghold: Option<Stronghold>,
-    site_type: StrongholdSiteType,
-}
-
-enum StrongholdSiteType {
-    Hillfort,
-    Town,
-}
-
 enum Stronghold {
     None,
     Hillfort,
@@ -80,48 +109,34 @@ enum Stronghold {
     ScottiSettlement,
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-enum Faction {
-    Civitates,
-    Dux,
-    Saxons,
-    Scotti,
-}
-
 #[derive(Debug, Clone, Copy)]
 enum PreBattle {
-    Ambush(u8),
-    Evade(u8),
+    Ambush,
+    Evade,
+    None,
 }
 
 impl fmt::Display for PreBattle {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            PreBattle::Ambush(_) => write!(f, "Ambush"),
-            PreBattle::Evade(_) => write!(f, "Evade"),
+            PreBattle::Ambush => write!(f, "Ambush"),
+            PreBattle::Evade => write!(f, "Evade"),
+            PreBattle::None => write!(f, "None"),
         }
     }
 }
 
-enum Control {
-    BritonControl,
-    DuxControl,
-    SaxonControl,
-    ScottiControl,
-    NoControl,
-}
-
-enum CardType {
-    Event,
-    Epoch,
-    Pivotal,
+#[derive(Debug, Clone)]
+struct StrongholdSite {
+    name: String,
+    stronghold: Option<Stronghold>,
+    town_allowed: bool,
 }
 
 struct Card {
     number: u8,
     name: String,
     eligibility_order: Vec<Faction>,
-    card_type: CardType,
 }
 
 struct SequenceOfPlay {
@@ -237,51 +252,42 @@ fn main() {
     // Else repeat
     // If no next card, do final scoring
 
-    let corieltauvi = Space::Land {
+    let corieltauvi = Space {
         terrain: Terrain::Fens,
-        control: Control::BritonControl,
+        control: Faction::Civitates,
         population: 2,
         prosperity: vec![2, 2],
-        civitates_pieces: vec![],
-        dux_pieces: vec![],
-        saxon_pieces: vec![],
-        scotti_pieces: vec![],
         stronghold_sites: vec![
             StrongholdSite {
                 name: String::from("Lindum"),
                 stronghold: Some(Stronghold::Fort),
-                site_type: StrongholdSiteType::Town,
+                town_allowed: true,
             },
             StrongholdSite {
                 name: String::from("Ratae"),
                 stronghold: Some(Stronghold::Town),
-                site_type: StrongholdSiteType::Town,
+                town_allowed: true,
             },
         ],
+        ..Default::default()
     };
 
     let mut sequence_of_play: SequenceOfPlay = SequenceOfPlay {
         ..Default::default()
     };
 
-    let (curr_card, new_card, deck, rules): (Card, Card, VecDeque<Card>, Rules) = setup();
+    let (curr_card, new_card, deck): (Card, Card, VecDeque<Card>) = setup();
     sequence_of_play.round_runner(&curr_card);
     sequence_of_play.round_runner(&new_card);
 }
 
-fn setup() -> (Card, Card, VecDeque<Card>, Rules) {
+fn setup() -> (Card, Card, VecDeque<Card>) {
     let mut deck: VecDeque<Card> = load_cards();
 
     let curr_card: Card = deck.pop_front().unwrap();
     let next_card: Card = deck.pop_front().unwrap();
 
-    let (mut units, mut interactions) = load_units();
-    let rules: Rules = Rules {
-        piece_types: units,
-        stronghold_types: vec![],
-        terrain_interactions: interactions,
-    };
-    return (curr_card, next_card, deck, rules);
+    return (curr_card, next_card, deck);
 }
 
 fn load_cards() -> VecDeque<Card> {
@@ -295,7 +301,6 @@ fn load_cards() -> VecDeque<Card> {
                 Faction::Dux,
                 Faction::Scotti,
             ],
-            card_type: CardType::Event,
         },
         Card {
             number: 44,
@@ -306,99 +311,8 @@ fn load_cards() -> VecDeque<Card> {
                 Faction::Dux,
                 Faction::Scotti,
             ],
-            card_type: CardType::Event,
         },
     ])
-}
-
-fn load_units() -> (Vec<Unit>, HashMap<(Unit, Terrain), Vec<PreBattle>>) {
-    let militia: Unit = Unit {
-        name: String::from("Militia"),
-    };
-    let comitates: Unit = Unit {
-        name: String::from("Comitates"),
-    };
-    let cavalry: Unit = Unit {
-        name: String::from("Cavalry"),
-    };
-    let saxon_raider: Unit = Unit {
-        name: String::from("Raider"),
-    };
-    let saxon_warband: Unit = Unit {
-        name: String::from("Warband"),
-    };
-    let scotti_raider: Unit = Unit {
-        name: String::from("Raider"),
-    };
-    let scotti_warband: Unit = Unit {
-        name: String::from("Warband"),
-    };
-
-    let mut terrain_interactions: HashMap<(Unit, Terrain), Vec<PreBattle>> = HashMap::new();
-    terrain_interactions.insert(
-        (saxon_raider.clone(), Terrain::Fens),
-        vec![PreBattle::Evade(4), PreBattle::Ambush(5)],
-    );
-    terrain_interactions.insert(
-        (saxon_raider.clone(), Terrain::Hills),
-        vec![PreBattle::Evade(5)],
-    );
-    terrain_interactions.insert(
-        (saxon_raider.clone(), Terrain::Clear),
-        vec![PreBattle::Evade(6)],
-    );
-
-    terrain_interactions.insert(
-        (saxon_warband.clone(), Terrain::Fens),
-        vec![PreBattle::Evade(5), PreBattle::Ambush(3)],
-    );
-
-    terrain_interactions.insert(
-        (scotti_raider.clone(), Terrain::Hills),
-        vec![PreBattle::Evade(4), PreBattle::Ambush(5)],
-    );
-    terrain_interactions.insert(
-        (scotti_raider.clone(), Terrain::Fens),
-        vec![PreBattle::Evade(5)],
-    );
-    terrain_interactions.insert(
-        (scotti_raider.clone(), Terrain::Clear),
-        vec![PreBattle::Evade(6)],
-    );
-
-    terrain_interactions.insert(
-        (scotti_warband.clone(), Terrain::Hills),
-        vec![PreBattle::Evade(5), PreBattle::Ambush(3)],
-    );
-
-    let unit_types: Vec<Unit> = vec![
-        militia.clone(),
-        comitates.clone(),
-        cavalry.clone(),
-        saxon_raider.clone(),
-        saxon_warband.clone(),
-        scotti_raider.clone(),
-        scotti_warband.clone(),
-    ];
-
-    let rules: Rules = Rules {
-        piece_types: unit_types.clone(),
-        stronghold_types: vec![],
-        terrain_interactions: terrain_interactions.clone(),
-    };
-    check_evade_ambush(
-        &rules,
-        &Terrain::Fens,
-        &vec![
-            militia.clone(),
-            saxon_raider.clone(),
-            scotti_warband.clone(),
-            saxon_warband.clone(),
-            cavalry.clone(),
-        ],
-    );
-
-    (unit_types, terrain_interactions)
 }
 
 fn event() {}
@@ -416,148 +330,368 @@ impl fmt::Display for Faction {
     }
 }
 
-impl Rules {
-    fn check_evade_ambush(rules: &Rules, terrain: &Terrain, forces: &Vec<Unit>) {
-        /*
-           For each player
-               For each group of forces
-                   Table lookup? Would be nice. If a global table, could then just update the table when Cymbrogi or one of the nasty events is played
-                   Table would need
-                       One Piece
-                       Many Terrain
-                       One Evade
-                           One Dice
-                       One Withdraw
-                           One Dice
-                   A piece can be a struct, and a rules struct can instantiate the particulars
-        */
-        for unit in forces {
-            match rules.terrain_interactions.get(&(unit.clone(), *terrain)) {
-                Some(tactics) => {
-                    println!("{} may:", unit.name);
-                    for t in tactics {
-                        println!("{}", t);
+fn get_evade(unit: Unit, terrain: Terrain) -> Option<u8> {
+    match (unit, terrain) {
+        (Unit::Comitates, Terrain::Hills) => Some(5),
+        (Unit::Comitates, _) => None,
+        (Unit::CivitatesSaxonFoederati, Terrain::Fens) => Some(5),
+        (Unit::CivitatesSaxonFoederati, _) => None,
+        (Unit::CivitatesScottiFoederati, Terrain::Hills) => Some(5),
+        (Unit::CivitatesScottiFoederati, _) => None,
+        (Unit::Militia, Terrain::Hills) => Some(5),
+        (Unit::Militia, _) => None,
+        (Unit::Cavalry, _) => None,
+        (Unit::DuxSaxonFoederati, Terrain::Fens) => Some(5),
+        (Unit::DuxSaxonFoederati, _) => None,
+        (Unit::DuxScottiFoederati, Terrain::Hills) => Some(5),
+        (Unit::DuxScottiFoederati, _) => None,
+        (Unit::SaxonRaider, Terrain::Fens) => Some(4),
+        (Unit::SaxonRaider, Terrain::Hills) => Some(5),
+        (Unit::SaxonRaider, Terrain::Clear) => Some(6),
+        (Unit::SaxonWarband, Terrain::Fens) => Some(5),
+        (Unit::SaxonWarband, _) => None,
+        (Unit::ScottiRaider, Terrain::Hills) => Some(4),
+        (Unit::ScottiRaider, Terrain::Fens) => Some(5),
+        (Unit::ScottiRaider, Terrain::Clear) => Some(6),
+        (Unit::ScottiWarband, Terrain::Hills) => Some(5),
+        (Unit::ScottiWarband, _) => None,
+        (_, _) => None,
+    }
+}
+
+fn get_ambush(unit: Unit, terrain: Terrain) -> Option<u8> {
+    match (unit, terrain) {
+        (Unit::Comitates, Terrain::Hills) => Some(3),
+        (Unit::Comitates, _) => None,
+        (Unit::CivitatesSaxonFoederati, Terrain::Fens) => Some(3),
+        (Unit::CivitatesSaxonFoederati, _) => None,
+        (Unit::CivitatesScottiFoederati, Terrain::Hills) => Some(3),
+        (Unit::CivitatesScottiFoederati, _) => None,
+        (Unit::Militia, Terrain::Hills) => Some(3),
+        (Unit::Militia, _) => None,
+        (Unit::Cavalry, _) => None,
+        (Unit::DuxSaxonFoederati, Terrain::Fens) => Some(3),
+        (Unit::DuxSaxonFoederati, _) => None,
+        (Unit::DuxScottiFoederati, Terrain::Hills) => Some(3),
+        (Unit::DuxScottiFoederati, _) => None,
+        (Unit::SaxonRaider, Terrain::Fens) => Some(5),
+        (Unit::SaxonWarband, Terrain::Fens) => Some(3),
+        (Unit::SaxonWarband, _) => None,
+        (Unit::ScottiRaider, Terrain::Hills) => Some(5),
+        (Unit::ScottiWarband, Terrain::Hills) => Some(3),
+        (Unit::ScottiWarband, _) => None,
+        (_, _) => None,
+    }
+}
+
+fn prebattle_assign(
+    player: Faction,
+    space: Space,
+) -> (Vec<Unit>, Vec<Unit>, Vec<Unit>, Vec<Unit>, Vec<Unit>) {
+    let prebattle: Vec<PreBattle> = vec![PreBattle::Evade, PreBattle::Ambush, PreBattle::None];
+    // For raiders not in home terrain
+    let raider_prebattle: Vec<PreBattle> = vec![PreBattle::Evade, PreBattle::None];
+
+    //let mut trap: Vec<Unit> = vec![];
+    let mut charge_or_ambush: Vec<Unit> = vec![];
+    let mut melee: Vec<Unit> = vec![];
+    let mut harass: Vec<Unit> = vec![];
+    let mut roll_evade: Vec<Unit> = vec![];
+    let mut roll_ambush: Vec<Unit> = vec![];
+
+    match player {
+        Faction::Civitates => {
+            if space.militia > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Militia choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::Militia),
+                        PreBattle::Evade => roll_evade.push(Unit::Militia),
+                        PreBattle::None => melee.push(Unit::Militia),
+                    }
+                } else {
+                    melee.push(Unit::Militia);
+                }
+            }
+            if space.comitates > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Comitates choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::Comitates),
+                        PreBattle::Evade => roll_evade.push(Unit::Comitates),
+                        PreBattle::None => melee.push(Unit::Comitates),
+                    }
+                } else {
+                    melee.push(Unit::Comitates);
+                }
+            }
+            if space.civitates_saxon_foederati > 0 {
+                if space.terrain == Terrain::Fens {
+                    let selection = Select::new()
+                        .with_prompt("What do Civitates Saxon Foederati choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::CivitatesSaxonFoederati),
+                        PreBattle::Evade => roll_evade.push(Unit::CivitatesSaxonFoederati),
+                        PreBattle::None => melee.push(Unit::CivitatesSaxonFoederati),
+                    }
+                } else {
+                    melee.push(Unit::CivitatesSaxonFoederati);
+                }
+            }
+            if space.civitates_scotti_foederati > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Civitates Scotti Foederati choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::CivitatesScottiFoederati),
+                        PreBattle::Evade => roll_evade.push(Unit::CivitatesScottiFoederati),
+                        PreBattle::None => melee.push(Unit::CivitatesScottiFoederati),
+                    }
+                } else {
+                    melee.push(Unit::CivitatesScottiFoederati);
+                }
+            }
+        }
+        Faction::Dux => {
+            if space.cavalry > 0 {
+                charge_or_ambush.push(Unit::Cavalry);
+            }
+            if space.dux_saxon_foederati > 0 {
+                if space.terrain == Terrain::Fens {
+                    let selection = Select::new()
+                        .with_prompt("What do Dux Saxon Foederati choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::DuxSaxonFoederati),
+                        PreBattle::Evade => roll_evade.push(Unit::DuxSaxonFoederati),
+                        PreBattle::None => melee.push(Unit::DuxSaxonFoederati),
+                    }
+                } else {
+                    melee.push(Unit::DuxSaxonFoederati);
+                }
+            }
+            if space.dux_scotti_foederati > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Dux Scotti Foederati choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::DuxScottiFoederati),
+                        PreBattle::Evade => roll_evade.push(Unit::DuxScottiFoederati),
+                        PreBattle::None => melee.push(Unit::DuxScottiFoederati),
+                    }
+                } else {
+                    melee.push(Unit::DuxScottiFoederati);
+                }
+            }
+        }
+        Faction::Saxons => {
+            if space.saxon_raider > 0 {
+                if space.terrain == Terrain::Fens {
+                    let selection = Select::new()
+                        .with_prompt("What do Saxon Raiders choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::SaxonRaider),
+                        PreBattle::Evade => roll_evade.push(Unit::SaxonRaider),
+                        PreBattle::None => harass.push(Unit::SaxonRaider),
+                    }
+                } else {
+                    let selection = Select::new()
+                        .with_prompt("What do Saxon Raiders choose?")
+                        .items(&raider_prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match raider_prebattle[selection] {
+                        PreBattle::Evade => roll_evade.push(Unit::SaxonRaider),
+                        PreBattle::None => harass.push(Unit::SaxonRaider),
+                        _ => {}
                     }
                 }
-                None => {}
             }
+            if space.saxon_warband > 0 {
+                if space.terrain == Terrain::Fens {
+                    let selection = Select::new()
+                        .with_prompt("What do Saxon Warbands choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::SaxonWarband),
+                        PreBattle::Evade => roll_evade.push(Unit::SaxonWarband),
+                        PreBattle::None => melee.push(Unit::SaxonWarband),
+                    }
+                } else {
+                    melee.push(Unit::SaxonWarband);
+                }
+            }
+        }
+        Faction::Scotti => {
+            if space.scotti_raider > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Scotti Raiders choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::ScottiRaider),
+                        PreBattle::Evade => roll_evade.push(Unit::ScottiRaider),
+                        PreBattle::None => harass.push(Unit::ScottiRaider),
+                    }
+                } else {
+                    let selection = Select::new()
+                        .with_prompt("What do Scotti Raiders choose?")
+                        .items(&raider_prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match raider_prebattle[selection] {
+                        PreBattle::Evade => roll_evade.push(Unit::ScottiRaider),
+                        PreBattle::None => harass.push(Unit::ScottiRaider),
+                        _ => {}
+                    }
+                }
+            }
+            if space.scotti_warband > 0 {
+                if space.terrain == Terrain::Hills {
+                    let selection = Select::new()
+                        .with_prompt("What do Scotti Warbands choose?")
+                        .items(&prebattle)
+                        .interact()
+                        .unwrap();
+
+                    match prebattle[selection] {
+                        PreBattle::Ambush => roll_ambush.push(Unit::ScottiWarband),
+                        PreBattle::Evade => roll_evade.push(Unit::ScottiWarband),
+                        PreBattle::None => melee.push(Unit::ScottiWarband),
+                    }
+                } else {
+                    melee.push(Unit::ScottiWarband);
+                }
+            }
+        }
+        Faction::None => {}
+    };
+    return (roll_ambush, roll_evade, charge_or_ambush, melee, harass);
+}
+
+fn prebattle_roll(ambush: Vec<Unit>, evade: Vec<Unit>, t: Terrain) -> (Vec<Unit>, Vec<Unit>, Vec<Unit>) {
+    let mut charge_or_ambush = vec![];
+    let mut melee = vec![];
+    let mut harass = vec![];
+    let mut rng = rand::rng();
+
+    for u in ambush {
+        let die_roll = rng.random_range(1..=6);
+        if die_roll >= get_ambush(u.clone(), t).unwrap() {
+            charge_or_ambush.push(u);
+        } else if u == Unit::SaxonRaider || u == Unit::ScottiRaider {
+            harass.push(u);
+        } else {
+            melee.push(u)
         }
     }
 
-    fn battle(
-        attacker: Faction,
-        defender: Faction,
-        space: Space,
-        fragmentation: bool,
-        rules: &Rules,
-    ) {
-        /*
-           Required Starting Information
-
-           Fragmentation Status
-           Attacking player
-           Defending player(s)
-           Space
-           Attacking force/is this from a Raid
-           Feats: Retaliate, Shield Wall, Surprise, Reinforce, Ravage
-        */
-
-        /*
-           Required Tracking
-           Are Cavalry fighting?
-           Are Barbarians fighting?
-           How many pieces does each side lose?
-           Did a side survive?
-           Was a stronghold Assaulted?
-           Were units chosen to Siege a Stronghold?
-           Plunder capacity
-        */
-
-        // If not Fragmentation or Dux vs Civis, Britons fight together
-        // Raid battle only fights with placed Raiders
-
-        /*
-           Pre-Battle
-           Raiders may Evade in all Terrain or Ambush in Home Terrain
-           Warbands, Foederati, Comitates, Militia may Evade or Ambush in Home Terrain
-        */
-
-        /*
-           PRE-BATTLE
-
-           for attackers and defenders
-
-        */
-        match space {
-            Space::Land {
-                terrain,
-                control: _,
-                population: _,
-                prosperity: _,
-                civitates_pieces,
-                dux_pieces,
-                saxon_pieces,
-                scotti_pieces,
-                stronghold_sites: _,
-            } => {
-                match attacker {
-                    Faction::Civitates => check_evade_ambush(rules, &terrain, &civitates_pieces),
-                    Faction::Dux => check_evade_ambush(rules, &terrain, &dux_pieces),
-                    Faction::Saxons => check_evade_ambush(rules, &terrain, &saxon_pieces),
-                    Faction::Scotti => check_evade_ambush(rules, &terrain, &scotti_pieces),
-                }
-
-                match defender {
-                    Faction::Civitates => check_evade_ambush(rules, &terrain, &civitates_pieces),
-                    Faction::Dux => check_evade_ambush(rules, &terrain, &dux_pieces),
-                    Faction::Saxons => check_evade_ambush(rules, &terrain, &saxon_pieces),
-                    Faction::Scotti => check_evade_ambush(rules, &terrain, &scotti_pieces),
-                }
+    for u in evade {
+        let die_roll = rng.random_range(1..=6);
+        if die_roll < get_evade(u.clone(), t).unwrap() {
+            if u == Unit::SaxonRaider || u == Unit::ScottiRaider {
+            harass.push(u);
+            } else {
+               melee.push(u)
             }
-            _ => panic!(
-                "Why are you trying to fight a land in the middle of the sea? Don't be like Caligula"
-            ),
-        }
-
-        /*
-           Field Battle
-           If all defending units Evaded, skip
-           Militia and Raiders are halved
-           1. Trap
-           2. Defenders Withdraw
-           3. Charge/Ambush
-           4. Melee
-           5. Harass
-        */
-
-        /*
-           Assault
-           If all defenders Evaded, Withdrew, or died
-           Target Strongholds 1 by 1
-           1. Coup de Main
-           2. Escalade
-           3. Storm
-           4. If all defending units + garrison killed and attackers remain, remove Stronghold
-        */
-
-        /*
-           Battle Consequences
-           * If enemy is not pre-Frag Civis, if Cavalry fought and its side lost fewer pieces than enemy, +1 Prestige.
-                If cavalry fought and its side lost more pieces than the enemy, -1 Prestige.
-           * Each Fort or if not Frag Town removed, -2 Prestige
-           * Each Stronghold destroyed grants 2 plunder, 3 if Town. Cavalry only take plunder if Retaliate.
-                If Dux, +1 Prestige. If City, plunder all Prosperity.
-           * If a Barbarian lost fewer pieces than the enemy and survived, +1 Renown
-           * If Attacker kills units with Plunder, either distribute half rounded down among non-Cavalry attacking units,
-                or if Briton may return 1 Prosperity to the space, or if Barbarian in controlled space +1 Renown for each plunder
-        */
-
-        /*
-           Siege
-           If all defending units Evaded, Withdrew, or were removed
-           If Stronghold was not Assaulted and attacker has >= Troops as the Stronghold's Capacity,
-           defender must remove 1 unit from inside.
-           Attackers are counted for only 1 Stronghold each
-        */
+        } 
     }
+
+    return (charge_or_ambush, melee, harass);
+}
+
+fn battle(attacker: Faction, defender: Faction, space: Space) {
+    let (att_roll_ambush, att_roll_evade, mut att_charge_or_ambush, mut att_melee, mut att_harass) =
+        prebattle_assign(attacker, space.clone());
+    let (def_roll_ambush, def_roll_evade, mut def_charge_or_ambush, mut def_melee, mut def_harass) =
+        prebattle_assign(defender, space.clone());
+
+    let (mut a0, mut a1, mut a2) = prebattle_roll(att_roll_ambush, att_roll_evade, space.terrain);
+    let (mut d0, mut d1, mut d2) = prebattle_roll(def_roll_ambush, def_roll_evade, space.terrain);
+
+    att_charge_or_ambush.append(&mut a0);
+    def_charge_or_ambush.append(&mut d0);
+    att_melee.append(&mut a1);
+    def_melee.append(&mut d1);
+    att_harass.append(&mut a2);
+    def_harass.append(&mut d2);
+    // Pre-Battle
+
+    /*
+       Field Battle
+       If all defending units Evaded, skip
+       Militia and Raiders are halved
+       1. Trap
+       2. Defenders Withdraw
+       3. Charge/Ambush
+       4. Melee
+       5. Harass
+    */
+
+    /*
+       Assault
+       If all defenders Evaded, Withdrew, or died
+       Target Strongholds 1 by 1
+       1. Coup de Main
+       2. Escalade
+       3. Storm
+       4. If all defending units + garrison killed and attackers remain, remove Stronghold
+    */
+
+    /*
+       Battle Consequences
+       * If enemy is not pre-Frag Civis, if Cavalry fought and its side lost fewer pieces than enemy, +1 Prestige.
+            If cavalry fought and its side lost more pieces than the enemy, -1 Prestige.
+       * Each Fort or if not Frag Town removed, -2 Prestige
+       * Each Stronghold destroyed grants 2 plunder, 3 if Town. Cavalry only take plunder if Retaliate.
+            If Dux, +1 Prestige. If City, plunder all Prosperity.
+       * If a Barbarian lost fewer pieces than the enemy and survived, +1 Renown
+       * If Attacker kills units with Plunder, either distribute half rounded down among non-Cavalry attacking units,
+            or if Briton may return 1 Prosperity to the space, or if Barbarian in controlled space +1 Renown for each plunder
+    */
+
+    /*
+       Siege
+       If all defending units Evaded, Withdrew, or were removed
+       If Stronghold was not Assaulted and attacker has >= Troops as the Stronghold's Capacity,
+       defender must remove 1 unit from inside.
+       Attackers are counted for only 1 Stronghold each
+    */
 }
