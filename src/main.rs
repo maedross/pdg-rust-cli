@@ -63,6 +63,7 @@ struct Space {
     scotti_warband: u8,
     stronghold_sites: Vec<StrongholdSite>,
 }
+
 impl Default for Space {
     fn default() -> Space {
         Space {
@@ -99,6 +100,25 @@ enum Unit {
     ScottiRaider,
     ScottiWarband,
 }
+
+impl fmt::Display for Unit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Unit::Comitates => write!(f, "Comitates"),
+            Unit::CivitatesSaxonFoederati => write!(f, "Civitates Saxon Foederati"),
+            Unit::CivitatesScottiFoederati => write!(f, "Civitates Scotti Foederati"),
+            Unit::Militia => write!(f, "Militia"),
+            Unit::Cavalry => write!(f, "Cavalry"),
+            Unit::DuxSaxonFoederati => write!(f, "Dux Saxon Foederati"),
+            Unit::DuxScottiFoederati => write!(f, "Dux Scotti Foederati"),
+            Unit::SaxonRaider => write!(f, "Saxon Raider"),
+            Unit::SaxonWarband => write!(f, "Saxon Warband"),
+            Unit::ScottiRaider => write!(f, "Scotti Raider"),
+            Unit::ScottiWarband => write!(f, "Scotti Warband"),
+        }
+    }
+}
+
 struct Road {}
 enum Stronghold {
     None,
@@ -606,7 +626,11 @@ fn prebattle_assign(
     return (roll_ambush, roll_evade, charge_or_ambush, melee, harass);
 }
 
-fn prebattle_roll(ambush: Vec<Unit>, evade: Vec<Unit>, t: Terrain) -> (Vec<Unit>, Vec<Unit>, Vec<Unit>) {
+fn prebattle_roll(
+    ambush: Vec<Unit>,
+    evade: Vec<Unit>,
+    t: Terrain,
+) -> (Vec<Unit>, Vec<Unit>, Vec<Unit>) {
     let mut charge_or_ambush = vec![];
     let mut melee = vec![];
     let mut harass = vec![];
@@ -615,10 +639,13 @@ fn prebattle_roll(ambush: Vec<Unit>, evade: Vec<Unit>, t: Terrain) -> (Vec<Unit>
     for u in ambush {
         let die_roll = rng.random_range(1..=6);
         if die_roll >= get_ambush(u.clone(), t).unwrap() {
+            println!("{}: {} ambushed!", die_roll, u);
             charge_or_ambush.push(u);
         } else if u == Unit::SaxonRaider || u == Unit::ScottiRaider {
+            println!("{}: {} failed to ambush.", die_roll, u);
             harass.push(u);
         } else {
+            println!("{}: {} failed to ambush.", die_roll, u);
             melee.push(u)
         }
     }
@@ -627,17 +654,25 @@ fn prebattle_roll(ambush: Vec<Unit>, evade: Vec<Unit>, t: Terrain) -> (Vec<Unit>
         let die_roll = rng.random_range(1..=6);
         if die_roll < get_evade(u.clone(), t).unwrap() {
             if u == Unit::SaxonRaider || u == Unit::ScottiRaider {
-            harass.push(u);
+                println!("{}: {} failed to evade.", die_roll, u);
+                harass.push(u);
             } else {
-               melee.push(u)
+                println!("{}: {} failed to evade.", die_roll, u);
+                melee.push(u)
             }
-        } 
+        } else {
+            println!("{}: {} evaded!", die_roll, u);
+        }
     }
 
     return (charge_or_ambush, melee, harass);
 }
 
 fn battle(attacker: Faction, defender: Faction, space: Space) {
+    /*
+       Pre-Battle
+    */
+
     let (att_roll_ambush, att_roll_evade, mut att_charge_or_ambush, mut att_melee, mut att_harass) =
         prebattle_assign(attacker, space.clone());
     let (def_roll_ambush, def_roll_evade, mut def_charge_or_ambush, mut def_melee, mut def_harass) =
@@ -652,7 +687,6 @@ fn battle(attacker: Faction, defender: Faction, space: Space) {
     def_melee.append(&mut d1);
     att_harass.append(&mut a2);
     def_harass.append(&mut d2);
-    // Pre-Battle
 
     /*
        Field Battle
