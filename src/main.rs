@@ -164,6 +164,26 @@ struct DuxOutOfPlay {
     cavalry: u8,
 }
 
+/*
+    Sequence of play
+
+    FIRST just get turn taking with Command only -> Command only -> next round
+        Passing
+        Eligible factions
+        First acted faction
+        Second acted faction
+        Ineligible factions
+        THE LOOP
+
+    SECOND Limited commands
+
+    THIRD Command + Feat
+
+    FOURTH events (Command XOR event)
+
+    FIFTH the actual different options for first player (and how second is different)
+*/
+
 // Components
 
 enum Nationality {
@@ -173,15 +193,46 @@ enum Nationality {
 }
 
 struct Stronghold {
-    designation: String,
     controller: Player,
-    escalade: u8,
-    garrison: u8,
-    capacity: u8,
+    class: StrongholdClass,
+    nationality: Nationality,
+}
+
+enum StrongholdClass {
+    Fort {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
+    Hillfort {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
+    Town {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
+    Settlement {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
+    Eboracum {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
+    Londinium {
+        escalade: u8,
+        garrison: u8,
+        capacity: u8,
+    },
 }
 
 struct Unit {
-    designation: String,
+    designation: UnitClass,
     controller: Player,
     nationality: Nationality,
     plunder: bool,
@@ -196,9 +247,30 @@ enum UnitClass {
     Warband,
 }
 
+// Seq
+
 // Commands
 
-fn civitates_muster() {}
+/*
+    Any Command or Feat will go
+    1. Get possible target spaces
+    2. Select and pay for spaces
+    3. Do the thing
+*/
+
+fn civitates_muster() {
+    /*
+       1. Filter spaces with units or strongholds controlled by Civitates
+       2. Select spaces, costing 2 per (immediate)
+       3. For each space
+           1. Place troops
+               to place = 1 per stronghold
+               if Briton control
+                   to place += pop
+                pay wealth to place comitates instead?
+           2. Place stronghold
+    */
+}
 
 fn civitates_march() {}
 
@@ -206,9 +278,45 @@ fn civitates_trade() {}
 
 fn civitates_battle() {}
 
-fn dux_train() {}
+fn dux_train() {
+    /*
+       1. Place troops where Fort (cost 3)
+           Place cavalry
+           May place militia if Civitates stronghold
+       2. Add prosperity where Fort or friendly control (cost 2)
+           Add prosperity
 
-fn dux_march() {}
+    */
+}
+
+fn dux_march() {
+    /*
+        My Sisyphean task
+
+        FIRST OF ALL
+        negotiating with Civitates
+
+        select and pay for origins
+        then move to destinations
+            affected by roads
+        BUT ALSO
+            you can pick up allied pieces on the way that weren't in your
+            initial origin location, and you have to pay for those and mark them as new origins
+
+        Due to Road rules, some destinations cannot be waypoints
+        You can't move off the road and then back on (both for spaces without roads and spaces
+        with enemy control)
+
+        FOR origin
+            GET possible destinations (with routes)
+            SELECT destinations
+                FOR destinations
+                    SELECT pieces
+                    QUERY pickup?
+                        DISPLAY route spaces
+
+    */
+}
 
 fn dux_intercept() {}
 
@@ -263,6 +371,32 @@ fn scotti_surprise() {}
 fn scotti_ransom() {}
 
 fn scotti_entreat() {}
+
+/*
+    Events?
+*/
+
+/*
+    Epoch round
+*/
+
+/*
+    Victory
+*/
+
+/*
+    Bots
+*/
+
+// Helper functions
+
+fn move_units() {}
+
+fn battle() {}
+
+fn get_spaces() {}
+
+struct GameMap {}
 
 fn main() {
     /*
