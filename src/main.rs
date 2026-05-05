@@ -247,7 +247,35 @@ enum UnitClass {
     Warband,
 }
 
-// Seq
+/*
+    Sequence of Play
+
+    1. Set up the game
+    2. Draw the first card
+    3. Reveal the second card
+        If next card is Epoch, swap it with current
+    4. Players with playable Pivotal Events may play them
+        Follow trump rules
+    5. We are searching for first eligible
+    6. For the factions on the event
+        If the faction is eligible
+            May pass
+                continue
+            If searching for first eligible
+                May select first eligible options
+                    Set first eligible action
+                    We are searching for second eligible
+            If searching for second eligible
+                May select option
+                    Set second eligible option
+                    We are done with round
+        We are done with round
+    7. All ineligible and passed factions become eligible
+    8. All acted factions become ineligible
+    9. Draw next card
+    10. Reveal next card
+        
+*/
 
 // Commands
 
