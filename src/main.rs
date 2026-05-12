@@ -271,6 +271,27 @@ enum Action {
     Pass,
 }
 
+enum SequenceOfPlayBox<'a> {
+    EligibleBox {
+        factions: HashSet<Player>,
+        points_to: Vec<&'a SequenceOfPlayBox<'a>>,
+    },
+    ActionBox {
+        actions: Vec<Action>,
+        occupied: Option<Player>,
+        points_to: Vec<&'a SequenceOfPlayBox<'a>>,
+        sends_to: &'a SequenceOfPlayBox<'a>,
+    },
+    PassBox {
+        factions: HashSet<Player>,
+        sends_to: &'a SequenceOfPlayBox<'a>
+    },
+    IneligibleBox {
+        factions: HashSet<Player>,
+        sends_to: &'a SequenceOfPlayBox<'a>,
+    }
+}
+
 impl fmt::Display for SequenceOfPlay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
