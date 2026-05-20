@@ -236,19 +236,96 @@ struct CardManager<'a> {
 }
 
 // Sequence of Play
+#[derive(Debug, PartialEq, Eq)]
 
-struct SequenceOfPlay {
-    eligible_players: HashSet<Player>,
-    ineligible_players: HashSet<Player>,
-    passed_players: HashSet<Player>,
-    first_acted_player: Option<Player>,
-    second_acted_player: Option<Player>,
+struct SequenceOfPlay<'a> {
+    eligible_players: SequenceOfPlayBox<'a>,
+    ineligible_players: SequenceOfPlayBox<'a>,
+    passed_players: SequenceOfPlayBox<'a>,
+    selected_actions: Vec<&'a SequenceOfPlayBox<'a>>,
     current_state: SequenceOfPlayState,
-    action_chains: Vec<ActionChain>,
-    selected_action_chain: usize,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+fn build_sequence_of_play() -> SequenceOfPlay<'static> {
+    let eligible: SequenceOfPlayBox<'_> = SequenceOfPlayBox::EligibleBox {
+        factions: HashSet::from([
+            Player::Civitates,
+            Player::Dux,
+            Player::Saxons,
+            Player::Scotti,
+        ]),
+        points_to: vec![],
+    };
+
+    let ineligible: SequenceOfPlayBox<'_> = SequenceOfPlayBox::IneligibleBox {
+        factions: HashSet::new(),
+        sends_to: &eligible,
+    };
+
+    let pass: SequenceOfPlayBox<'_> = SequenceOfPlayBox::PassBox {
+        factions: HashSet::new(),
+        sends_to: &eligible,
+    };
+    let lim_cmd: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::LimitedCommand],
+        occupied: None,
+        points_to: vec![&ineligible],
+        sends_to: &ineligible,
+    };
+    let event_or_lim_cmd: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::Event, Action::LimitedCommand],
+        occupied: None,
+        points_to: vec![&ineligible],
+        sends_to: &ineligible,
+    };
+    let cmd_feat_second: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::Command, Action::Feat],
+        occupied: None,
+        points_to: vec![&ineligible],
+        sends_to: &ineligible,
+    };
+    let cmd: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::Command],
+        occupied: None,
+        points_to: vec![&lim_cmd],
+        sends_to: &ineligible,
+    };
+    let cmd_feat_first: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::Command, Action::Feat],
+        occupied: None,
+        points_to: vec![&event_or_lim_cmd],
+        sends_to: &ineligible,
+    };
+    let event: SequenceOfPlayBox<'_> = SequenceOfPlayBox::ActionBox {
+        actions: vec![Action::Event],
+        occupied: None,
+        points_to: vec![&cmd_feat_second],
+        sends_to: &ineligible,
+    };
+    match eligible {
+        SequenceOfPlayBox::EligibleBox {
+            factions: _,
+            mut points_to,
+        } => {
+            points_to.push(&event);
+            points_to.push(&cmd_feat_first);
+            points_to.push(&cmd);
+        }
+        _ => {},
+    }
+
+    let selected_actions: Vec<&SequenceOfPlayBox> = vec![];
+
+    return SequenceOfPlay {
+        eligible_players: eligible,
+        ineligible_players: ineligible,
+        passed_players: pass,
+        selected_actions: selected_actions,
+        current_state: SequenceOfPlayState::FirstAction,
+    };
+}
+
+#[derive(Debug, PartialEq, Eq, Hash)]
 enum SequenceOfPlayState {
     FirstAction,
     SecondAction,
@@ -262,7 +339,7 @@ struct ActionChain {
     second: Action,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 enum Action {
     Command,
     Feat,
@@ -271,6 +348,7 @@ enum Action {
     Pass,
 }
 
+#[derive(Debug, PartialEq, Eq)]
 enum SequenceOfPlayBox<'a> {
     EligibleBox {
         factions: HashSet<Player>,
@@ -284,15 +362,15 @@ enum SequenceOfPlayBox<'a> {
     },
     PassBox {
         factions: HashSet<Player>,
-        sends_to: &'a SequenceOfPlayBox<'a>
+        sends_to: &'a SequenceOfPlayBox<'a>,
     },
     IneligibleBox {
         factions: HashSet<Player>,
         sends_to: &'a SequenceOfPlayBox<'a>,
-    }
+    },
 }
 
-impl fmt::Display for SequenceOfPlay {
+impl fmt::Display for SequenceOfPlay<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
@@ -302,11 +380,26 @@ impl fmt::Display for SequenceOfPlay {
     }
 }
 
-impl SequenceOfPlay {
+impl SequenceOfPlay<'_> {
+    fn next_state(&mut self) {
+        match self.current_state {
+            SequenceOfPlayState::FirstAction => {
+                self.current_state = SequenceOfPlayState::SecondAction
+            }
+            SequenceOfPlayState::SecondAction => self.current_state = SequenceOfPlayState::Cleanup,
+            SequenceOfPlayState::Cleanup => self.current_state = SequenceOfPlayState::FirstAction,
+            SequenceOfPlayState::Epoch => self.current_state = SequenceOfPlayState::FirstAction,
+        }
+    }
+
     fn run_sequence_of_play(&mut self, card_view: &CardManager) {
         self.current_state = SequenceOfPlayState::FirstAction;
         println!("{}", self);
         // Query pivotal
+        while self.current_state != SequenceOfPlayState::Cleanup && self.eligible_players.len() > 0
+        {
+            self.next_state();
+        }
         let mut curr: usize = 0;
         let mut second_actions: Vec<&str> = vec![];
         while self.current_state == SequenceOfPlayState::FirstAction && curr < 4 {
@@ -561,7 +654,13 @@ fn main() {
        2. Begin sequence of play
        3. Loop
     */
-    println!("{:?} {} {} {}", Player::Civitates, Player::Dux, Player::Saxons, Player::Scotti);
+    println!(
+        "{:?} {} {} {}",
+        Player::Civitates,
+        Player::Dux,
+        Player::Saxons,
+        Player::Scotti
+    );
     let mut sop: SequenceOfPlay = SequenceOfPlay {
         eligible_players: HashSet::from([
             Player::Civitates,
