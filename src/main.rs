@@ -41,190 +41,6 @@ impl fmt::Debug for Player {
     }
 }
 
-enum Imperium {
-    RomanRule(Dominance),
-    Autonomy(Dominance),
-    Fragmentation,
-}
-
-enum Dominance {
-    Military,
-    Civilian,
-    None,
-}
-
-struct EdgeTrack {
-    briton_resources: u8,
-    wealth: u8,
-    dux_resources: u8,
-    prestige: u8,
-    total_prosperity: u8,
-    saxon_renown: u8,
-    scotti_renown: u8,
-    briton_control_threshold: u8,
-    prosperity_plus_prestige_threshold: Option<u8>,
-    control_plus_prestige_threshold: Option<u8>,
-    saxon_control_threshold: u8,
-    saxon_renown_threshold: Option<u8>,
-    scotti_renown_threshold: u8,
-}
-
-// Board
-
-struct Space<'a> {
-    name: String,
-    space_type: SpaceType,
-    terrain: Option<Terrain>,
-    adj_spaces: Vec<&'a Space<'a>>,
-    adj_seas: Vec<&'a Sea<'a>>,
-    pop: u8,
-    max_pop: u8,
-    top_prosp: u8,
-    bottom_prosp: u8,
-    stronghold_sites: Vec<StrongholdSite<'a>>,
-    control: Option<Player>,
-}
-
-enum SpaceType {
-    Region,
-    City,
-}
-
-struct Sea<'a> {
-    name: String,
-    patrol: bool,
-    adj: Vec<&'a Space<'a>>,
-}
-
-struct StrongholdSite<'a> {
-    name: String,
-    site_type: StrongholdSiteType,
-    stronghold: Option<&'a Stronghold>,
-}
-
-enum StrongholdSiteType {
-    Hillfort,
-    Town,
-    City,
-}
-
-struct City {}
-
-struct Region {}
-
-enum Terrain {
-    Clear,
-    Fens,
-    Hills,
-}
-
-// Holding Boxes
-
-struct CivitatesAvailable {
-    militia: u8,
-    comitates: u8,
-    towns: u8,
-    hillforts: u8,
-    refugees: u8,
-}
-
-struct CivitatesOutOfPlay {
-    comitates: u8,
-}
-
-struct ScottiAvailable {
-    raiders: u8,
-    warbands: u8,
-    settlements: u8,
-    max_settlements: u8,
-}
-
-struct NiallNoigiallach {
-    raiders: u8,
-}
-
-struct SaxonsAvailable {
-    raiders: u8,
-    warbands: u8,
-    settlements: u8,
-    max_settlements: u8,
-}
-
-struct DuxAvailable {
-    cavalry: u8,
-    forts: u8,
-}
-
-struct DuxCasualties {
-    cavalry: u8,
-}
-
-struct DuxOutOfPlay {
-    cavalry: u8,
-}
-
-// Components
-
-enum Nationality {
-    Briton,
-    Saxon,
-    Scotti,
-}
-
-struct Stronghold {
-    controller: Player,
-    class: StrongholdClass,
-    nationality: Nationality,
-}
-
-enum StrongholdClass {
-    Fort {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Hillfort {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Town {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Settlement {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Eboracum {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Londinium {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-}
-
-struct Unit {
-    designation: UnitClass,
-    controller: Player,
-    nationality: Nationality,
-    plunder: bool,
-}
-
-enum UnitClass {
-    Cavalry,
-    Comitates,
-    Foederati,
-    Militia,
-    Raider,
-    Warband,
-}
 
 // Cards
 struct Event {
@@ -243,7 +59,7 @@ struct CardManager<'a> {
 
 // Sequence of Play
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum SequenceOfPlayState {
     GettingFirstAction,
     FirstAction,
@@ -253,16 +69,28 @@ enum SequenceOfPlayState {
     EndOfRound,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 enum AvailableActionState {
     Pass,
     CommandOnly,
     LimitedCommand,
-    CommandFeatFirst,
+    CommandFeat,
     Event,
 }
 
-#[derive(Debug)]
+impl fmt::Display for AvailableActionState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AvailableActionState::Pass => write!(f, "Pass"),
+            AvailableActionState::CommandOnly => write!(f, "CommandOnly"),
+            AvailableActionState::LimitedCommand => write!(f, "LimitedCommand"),
+            AvailableActionState::CommandFeat => write!(f, "CommandFeat"),
+            AvailableActionState::Event => write!(f, "Event"),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 enum PlayerState {
     Eligible,
     Passed,
@@ -270,16 +98,18 @@ enum PlayerState {
     Ineligible,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 struct PlayerEligibility {
     faction: Player,
     state: PlayerState,
 }
 
+#[derive(Clone)]
 struct SequenceOfPlay {
     player_eligibilities: Vec<PlayerEligibility>,
     state: SequenceOfPlayState,
     available_actions: Vec<AvailableActionState>,
+    current_player: Option<Player>,
 }
 
 impl fmt::Display for SequenceOfPlay {
@@ -314,7 +144,13 @@ impl SequenceOfPlay {
                 },
             ],
             state: SequenceOfPlayState::GettingFirstAction,
-            available_actions: vec![]
+            available_actions: vec![
+                AvailableActionState::Pass,
+                AvailableActionState::CommandOnly,
+                AvailableActionState::CommandFeat,
+                AvailableActionState::Event,
+            ],
+            current_player: None,
         }
     }
 
@@ -322,27 +158,50 @@ impl SequenceOfPlay {
         match self.state {
             SequenceOfPlayState::GettingFirstAction => {
                 println!("Getting first action");
-                let selection = Select::new()
+                let selection: usize = Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
-                    .items(&vec!["A", "B", "C"])
+                    .items(&self.available_actions)
                     .interact()
                     .unwrap();
-                println!("Selected {}", selection);
+                println!("Selected {}", self.available_actions[selection]);
+                match self.available_actions[selection] {
+                    AvailableActionState::Pass => return Ok(self),
+                    AvailableActionState::CommandOnly => {
+                        self.available_actions = vec![
+                            AvailableActionState::Pass,
+                            AvailableActionState::LimitedCommand,
+                        ]
+                    }
+                    AvailableActionState::CommandFeat => {
+                        self.available_actions = vec![
+                            AvailableActionState::Pass,
+                            AvailableActionState::LimitedCommand,
+                            AvailableActionState::Event,
+                        ]
+                    }
+                    AvailableActionState::Event => {
+                        self.available_actions = vec![
+                            AvailableActionState::Pass,
+                            AvailableActionState::CommandFeat,
+                        ]
+                    }
+                    _ => return Err("Selected invalid action"),
+                }
                 self.state = SequenceOfPlayState::FirstAction;
                 return Ok(self);
-            },
-            _ => Err("Can only get first action in GettingFirstAction state")
+            }
+            _ => Err("Can only get first action in GettingFirstAction state"),
         }
     }
 
     fn first_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::FirstAction => {
-                println!("Performing first action");
+                println!("Performing first action: {:?}", self.state);
                 self.state = SequenceOfPlayState::GettingSecondAction;
                 return Ok(self);
-            },
-            _ => Err("Can only do first action in FirstAction state")
+            }
+            _ => Err("Can only do first action in FirstAction state"),
         }
     }
 
@@ -350,10 +209,29 @@ impl SequenceOfPlay {
         match self.state {
             SequenceOfPlayState::GettingSecondAction => {
                 println!("Getting second action");
+                let selection: usize = Select::new()
+                    .with_prompt(format!("Select one of the following actions!"))
+                    .items(&self.available_actions)
+                    .interact()
+                    .unwrap();
+                println!("Selected {}", self.available_actions[selection]);
+                match self.available_actions[selection] {
+                    AvailableActionState::Pass => return Ok(self),
+                    AvailableActionState::LimitedCommand => {},
+                    AvailableActionState::Event => {},
+                    AvailableActionState::CommandFeat => {},
+                    _ => return Err("Selected invalid action"),
+                }
+                self.available_actions = vec![
+                    AvailableActionState::Pass,
+                    AvailableActionState::CommandOnly,
+                    AvailableActionState::CommandFeat,
+                    AvailableActionState::Event,
+                ];
                 self.state = SequenceOfPlayState::SecondAction;
                 return Ok(self);
-            },
-            _ => Err("Can only get second action in GettingSecondAction state")
+            }
+            _ => Err("Can only get second action in GettingSecondAction state"),
         }
     }
 
@@ -363,171 +241,23 @@ impl SequenceOfPlay {
                 println!("Performing second action");
                 self.state = SequenceOfPlayState::EndOfRound;
                 return Ok(self);
-            },
-            _ => Err("Can only do second action in SecondAction state")
+            }
+            _ => Err("Can only do second action in SecondAction state"),
         }
     }
 
     fn cleanup(mut self) -> Result<Self, &'static str> {
-        match  self.state {
+        match self.state {
             SequenceOfPlayState::EndOfRound => {
                 println!("Reseting for the next round");
                 self.state = SequenceOfPlayState::GettingFirstAction;
                 return Ok(self);
-            },
-            _ => Err("Can only do cleanup in EndOfRound state")
+            }
+            _ => Err("Can only do cleanup in EndOfRound state"),
         }
     }
 }
 
-// Commands
-
-/*
-    Any Command or Feat will go
-    1. Get possible target spaces
-    2. Select and pay for spaces
-    3. Do the thing
-*/
-
-fn civitates_muster() {
-    /*
-       1. Filter spaces with units or strongholds controlled by Civitates
-       2. Select spaces, costing 2 per (immediate)
-       3. For each space
-           1. Place troops
-               to place = 1 per stronghold
-               if Briton control
-                   to place += pop
-                pay wealth to place comitates instead?
-           2. Place stronghold
-    */
-}
-
-fn civitates_march() {}
-
-fn civitates_trade() {}
-
-fn civitates_battle() {}
-
-fn dux_train() {
-    /*
-       1. Place troops where Fort (cost 3)
-           Place cavalry
-           May place militia if Civitates stronghold
-       2. Add prosperity where Fort or friendly control (cost 2)
-           Add prosperity
-
-    */
-}
-
-fn dux_march() {
-    /*
-        My Sisyphean task
-
-        FIRST OF ALL
-        negotiating with Civitates
-
-        select and pay for origins
-        then move to destinations
-            affected by roads
-        BUT ALSO
-            you can pick up allied pieces on the way that weren't in your
-            initial origin location, and you have to pay for those and mark them as new origins
-
-        Due to Road rules, some destinations cannot be waypoints
-        You can't move off the road and then back on (both for spaces without roads and spaces
-        with enemy control)
-
-        FOR origin
-            GET possible destinations (with routes)
-            SELECT destinations
-                FOR destinations
-                    SELECT pieces
-                    QUERY pickup?
-                        DISPLAY route spaces
-
-    */
-}
-
-fn dux_intercept() {}
-
-fn dux_battle() {}
-
-fn saxon_raid() {}
-
-fn saxon_return() {}
-
-fn saxon_march() {}
-
-fn saxon_battle() {}
-
-fn scotti_raid() {}
-
-fn scotti_return() {}
-
-fn scotti_march() {}
-
-fn scotti_battle() {}
-
-// Feats
-
-fn civitates_rule() {}
-
-fn civitates_invite() {}
-
-fn civitates_reinforce() {}
-
-fn civitates_pillage() {}
-
-fn dux_build() {}
-
-fn dux_invite() {}
-
-fn dux_requisition() {}
-
-fn dux_retaliate() {}
-
-fn saxon_settle() {}
-
-fn saxon_surprise() {}
-
-fn saxon_ravage() {}
-
-fn saxon_shieldwall() {}
-
-fn scotti_settle() {}
-
-fn scotti_surprise() {}
-
-fn scotti_ransom() {}
-
-fn scotti_entreat() {}
-
-/*
-    Events?
-*/
-
-/*
-    Epoch round
-*/
-
-/*
-    Victory
-*/
-
-/*
-    Bots
-*/
-
-// Helper functions
-
-fn move_units() {}
-
-fn battle() {}
-
-fn get_spaces() {}
-
-struct GameMap {}
 
 fn main() {
     /*
@@ -541,7 +271,7 @@ fn main() {
        3. Loop
     */
     println!(
-        "{:?} {} {} {}",
+        "{} {} {} {}",
         Player::Civitates,
         Player::Dux,
         Player::Saxons,
@@ -549,12 +279,33 @@ fn main() {
     );
 
     let sop: SequenceOfPlay = SequenceOfPlay::new();
+
+    loop {
+        match sop.state.clone() {
+            SequenceOfPlayState::Passing => {},
+            SequenceOfPlayState::GettingFirstAction => {
+                let sop: SequenceOfPlay = sop.clone().get_first_action().unwrap();
+            },
+            SequenceOfPlayState::FirstAction => {
+                let sop: SequenceOfPlay = sop.clone().first_action().unwrap();
+            },
+            SequenceOfPlayState::GettingSecondAction => {
+                let sop: SequenceOfPlay = sop.clone().get_second_action().unwrap();
+            },
+            SequenceOfPlayState::SecondAction => {
+                let sop: SequenceOfPlay = sop.clone().second_action().unwrap();
+            },
+            SequenceOfPlayState::EndOfRound => {
+                let sop: SequenceOfPlay = sop.clone().cleanup().unwrap();
+            },
+        }
+    }
+    
     let sop: SequenceOfPlay = sop.get_first_action().unwrap();
     let sop: SequenceOfPlay = sop.first_action().unwrap();
     let sop: SequenceOfPlay = sop.get_second_action().unwrap();
     let sop: SequenceOfPlay = sop.second_action().unwrap();
     let sop: SequenceOfPlay = sop.cleanup().unwrap();
-
 
     let mut test_card_0: Event = Event {
         eligibility: vec![
