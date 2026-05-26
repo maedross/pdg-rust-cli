@@ -278,35 +278,29 @@ fn main() {
         Player::Scotti
     );
 
-    let sop: SequenceOfPlay = SequenceOfPlay::new();
+    let mut sop: SequenceOfPlay = SequenceOfPlay::new();
 
     loop {
-        match sop.state.clone() {
+        match sop.state {
             SequenceOfPlayState::Passing => {},
             SequenceOfPlayState::GettingFirstAction => {
-                let sop: SequenceOfPlay = sop.clone().get_first_action().unwrap();
+                sop = sop.get_first_action().unwrap();
             },
             SequenceOfPlayState::FirstAction => {
-                let sop: SequenceOfPlay = sop.clone().first_action().unwrap();
+                sop = sop.first_action().unwrap();
             },
             SequenceOfPlayState::GettingSecondAction => {
-                let sop: SequenceOfPlay = sop.clone().get_second_action().unwrap();
+                sop = sop.get_second_action().unwrap();
             },
             SequenceOfPlayState::SecondAction => {
-                let sop: SequenceOfPlay = sop.clone().second_action().unwrap();
+                sop = sop.second_action().unwrap();
             },
             SequenceOfPlayState::EndOfRound => {
-                let sop: SequenceOfPlay = sop.clone().cleanup().unwrap();
+                sop = sop.cleanup().unwrap();
             },
         }
     }
     
-    let sop: SequenceOfPlay = sop.get_first_action().unwrap();
-    let sop: SequenceOfPlay = sop.first_action().unwrap();
-    let sop: SequenceOfPlay = sop.get_second_action().unwrap();
-    let sop: SequenceOfPlay = sop.second_action().unwrap();
-    let sop: SequenceOfPlay = sop.cleanup().unwrap();
-
     let mut test_card_0: Event = Event {
         eligibility: vec![
             Player::Civitates,
