@@ -1,5 +1,6 @@
 use colored::Colorize;
 use dialoguer::Select;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::vec;
@@ -8,7 +9,10 @@ use crate::Player::Civitates;
 use crate::Player::Dux;
 use crate::Player::Saxons;
 use crate::Player::Scotti;
+use crate::PlayerState::Acted;
 use crate::PlayerState::Eligible;
+use crate::PlayerState::Ineligible;
+use crate::PlayerState::Passed;
 // State
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -40,7 +44,6 @@ impl fmt::Debug for Player {
         }
     }
 }
-
 
 // Cards
 struct Event {
@@ -98,15 +101,9 @@ enum PlayerState {
     Ineligible,
 }
 
-#[derive(Clone, Copy, Debug)]
-struct PlayerEligibility {
-    faction: Player,
-    state: PlayerState,
-}
-
 #[derive(Clone)]
 struct SequenceOfPlay {
-    player_eligibilities: Vec<PlayerEligibility>,
+    player_eligibilities: HashMap<Player, PlayerState>,
     state: SequenceOfPlayState,
     available_actions: Vec<AvailableActionState>,
     current_player: Option<Player>,
@@ -124,25 +121,13 @@ impl fmt::Display for SequenceOfPlay {
 
 impl SequenceOfPlay {
     fn new() -> Self {
+        let mut player_eligibilities = HashMap::new();
+        player_eligibilities.insert(Civitates, Eligible);
+        player_eligibilities.insert(Dux, Eligible);
+        player_eligibilities.insert(Saxons, Eligible);
+        player_eligibilities.insert(Scotti, Eligible);
         SequenceOfPlay {
-            player_eligibilities: vec![
-                PlayerEligibility {
-                    faction: Civitates,
-                    state: Eligible,
-                },
-                PlayerEligibility {
-                    faction: Dux,
-                    state: Eligible,
-                },
-                PlayerEligibility {
-                    faction: Saxons,
-                    state: Eligible,
-                },
-                PlayerEligibility {
-                    faction: Scotti,
-                    state: Eligible,
-                },
-            ],
+            player_eligibilities: player_eligibilities,
             state: SequenceOfPlayState::GettingFirstAction,
             available_actions: vec![
                 AvailableActionState::Pass,
@@ -157,7 +142,7 @@ impl SequenceOfPlay {
     fn get_first_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::GettingFirstAction => {
-                println!("Getting first action");
+                println!("Getting first action from {}", self.current_player.unwrap());
                 let selection: usize = Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&self.available_actions)
@@ -197,7 +182,7 @@ impl SequenceOfPlay {
     fn first_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::FirstAction => {
-                println!("Performing first action: {:?}", self.state);
+                println!("{} performing first action: {:?}", self.current_player.unwrap(), self.state);
                 self.state = SequenceOfPlayState::GettingSecondAction;
                 return Ok(self);
             }
@@ -208,7 +193,7 @@ impl SequenceOfPlay {
     fn get_second_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::GettingSecondAction => {
-                println!("Getting second action");
+                println!("Getting second action from {}", self.current_player.unwrap());
                 let selection: usize = Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&self.available_actions)
@@ -217,9 +202,9 @@ impl SequenceOfPlay {
                 println!("Selected {}", self.available_actions[selection]);
                 match self.available_actions[selection] {
                     AvailableActionState::Pass => return Ok(self),
-                    AvailableActionState::LimitedCommand => {},
-                    AvailableActionState::Event => {},
-                    AvailableActionState::CommandFeat => {},
+                    AvailableActionState::LimitedCommand => {}
+                    AvailableActionState::Event => {}
+                    AvailableActionState::CommandFeat => {}
                     _ => return Err("Selected invalid action"),
                 }
                 self.available_actions = vec![
@@ -238,7 +223,7 @@ impl SequenceOfPlay {
     fn second_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::SecondAction => {
-                println!("Performing second action");
+                println!("{} performing second action", self.current_player.unwrap());
                 self.state = SequenceOfPlayState::EndOfRound;
                 return Ok(self);
             }
@@ -257,7 +242,6 @@ impl SequenceOfPlay {
         }
     }
 }
-
 
 fn main() {
     /*
@@ -280,27 +264,42 @@ fn main() {
 
     let mut sop: SequenceOfPlay = SequenceOfPlay::new();
 
+    // TODO: Should not be advancing player every state transition, only after actions taken
+    // Iterable instead of vec?
+    // Also worth considering if event deck will be part of SequenceOfPlay
     loop {
-        match sop.state {
-            SequenceOfPlayState::Passing => {},
-            SequenceOfPlayState::GettingFirstAction => {
-                sop = sop.get_first_action().unwrap();
-            },
-            SequenceOfPlayState::FirstAction => {
-                sop = sop.first_action().unwrap();
-            },
-            SequenceOfPlayState::GettingSecondAction => {
-                sop = sop.get_second_action().unwrap();
-            },
-            SequenceOfPlayState::SecondAction => {
-                sop = sop.second_action().unwrap();
-            },
-            SequenceOfPlayState::EndOfRound => {
-                sop = sop.cleanup().unwrap();
-            },
+        for p in vec![Civitates, Dux, Saxons, Scotti] {
+            match sop.player_eligibilities.get(&p).unwrap() {
+                Eligible => sop.current_player = Some(p),
+                Ineligible => {
+                    println!("{} is ineligible. Continuing...", p);
+                    continue;
+                },
+                Passed => panic!("{} is passed, which is invalid", p),
+                Acted => panic!("{} has acted, which is invalid", p),
+            }
+            sop.current_player = Some(p);
+            match sop.state {
+                SequenceOfPlayState::Passing => {}
+                SequenceOfPlayState::GettingFirstAction => {
+                    sop = sop.get_first_action().unwrap();
+                }
+                SequenceOfPlayState::FirstAction => {
+                    sop = sop.first_action().unwrap();
+                }
+                SequenceOfPlayState::GettingSecondAction => {
+                    sop = sop.get_second_action().unwrap();
+                }
+                SequenceOfPlayState::SecondAction => {
+                    sop = sop.second_action().unwrap();
+                }
+                SequenceOfPlayState::EndOfRound => {
+                    sop = sop.cleanup().unwrap();
+                }
+            }
         }
     }
-    
+
     let mut test_card_0: Event = Event {
         eligibility: vec![
             Player::Civitates,
