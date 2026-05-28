@@ -120,9 +120,17 @@ impl fmt::Display for SequenceOfPlay {
     }
 }
 
+/*
+    TODO: Implement player state checking and setting
+    When a player selected a non-pass action, they should be set to acting
+    When getting action, should be checking player is eligible
+    Cleanup should move ineligible and passed players to eligible, acted to ineligible
+
+    Give cards names and print them, round number
+*/
 impl SequenceOfPlay {
     fn new() -> Self {
-        let mut player_eligibilities = HashMap::new();
+        let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
         player_eligibilities.insert(Civitates, Eligible);
         player_eligibilities.insert(Dux, Eligible);
         player_eligibilities.insert(Saxons, Eligible);
@@ -146,7 +154,24 @@ impl SequenceOfPlay {
             SequenceOfPlayState::Passing => {
                 println!("{} chose to pass", self.current_player.unwrap());
                 match self.old_state {
-                    Some(s) => self.state = s,
+                    Some(s) => {
+                        self.state = s;
+                        print!(
+                            "{} has been set from {:?} to ",
+                            self.current_player.unwrap(),
+                            self.player_eligibilities
+                                .get(&self.current_player.unwrap())
+                                .unwrap()
+                        );
+                        self.player_eligibilities
+                            .insert(self.current_player.unwrap(), Passed);
+                        print!(
+                            "{:?}\n\n",
+                            self.player_eligibilities
+                                .get(&self.current_player.unwrap())
+                                .unwrap()
+                        );
+                    }
                     None => panic!("Passed when there was no old state stored!"),
                 }
 
@@ -159,7 +184,7 @@ impl SequenceOfPlay {
     fn get_first_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::GettingFirstAction => {
-                println!("Getting first action from {}", self.current_player.unwrap());
+                println!("\n\nGetting first action from {}", self.current_player.unwrap());
                 let selection: usize = Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&self.available_actions)
@@ -219,7 +244,7 @@ impl SequenceOfPlay {
         match self.state {
             SequenceOfPlayState::GettingSecondAction => {
                 println!(
-                    "Getting second action from {}",
+                    "\nGetting second action from {}",
                     self.current_player.unwrap()
                 );
                 let selection: usize = Select::new()
@@ -286,13 +311,6 @@ fn main() {
        2. Begin sequence of play
        3. Loop
     */
-    println!(
-        "{} {} {} {}",
-        Player::Civitates,
-        Player::Dux,
-        Player::Saxons,
-        Player::Scotti
-    );
 
     let mut sop: SequenceOfPlay = SequenceOfPlay::new();
 
@@ -367,14 +385,12 @@ fn main() {
                                     sop = sop.cleanup().unwrap();
                                 }
                             }
-                            
                         }
                         None => {
                             println!("Game end");
                             break;
                         }
                     }
-                    
                 }
                 curr_card = cards.next();
             }
