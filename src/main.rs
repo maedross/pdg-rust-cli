@@ -1,9 +1,7 @@
 use colored::Colorize;
 use dialoguer::Select;
 use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt;
-use std::vec;
 
 use crate::Player::Civitates;
 use crate::Player::Dux;
@@ -46,6 +44,7 @@ impl fmt::Debug for Player {
 }
 
 // Cards
+#[derive(Clone, Debug)]
 struct Event {
     eligibility: Vec<Player>,
     unshaded: Option<u8>,
@@ -101,12 +100,14 @@ enum PlayerState {
     Ineligible,
 }
 
+// TODO: State history?
 #[derive(Clone)]
 struct SequenceOfPlay {
     player_eligibilities: HashMap<Player, PlayerState>,
     state: SequenceOfPlayState,
     available_actions: Vec<AvailableActionState>,
     current_player: Option<Player>,
+    old_state: Option<SequenceOfPlayState>,
 }
 
 impl fmt::Display for SequenceOfPlay {
@@ -136,6 +137,22 @@ impl SequenceOfPlay {
                 AvailableActionState::Event,
             ],
             current_player: None,
+            old_state: None,
+        }
+    }
+
+    fn pass(mut self) -> Result<Self, &'static str> {
+        match self.state {
+            SequenceOfPlayState::Passing => {
+                println!("{} chose to pass", self.current_player.unwrap());
+                match self.old_state {
+                    Some(s) => self.state = s,
+                    None => panic!("Passed when there was no old state stored!"),
+                }
+
+                return Ok(self);
+            }
+            _ => Err("Can only do pass in Passing state"),
         }
     }
 
@@ -150,7 +167,11 @@ impl SequenceOfPlay {
                     .unwrap();
                 println!("Selected {}", self.available_actions[selection]);
                 match self.available_actions[selection] {
-                    AvailableActionState::Pass => return Ok(self),
+                    AvailableActionState::Pass => {
+                        self.old_state = Some(self.state);
+                        self.state = SequenceOfPlayState::Passing;
+                        return Ok(self);
+                    }
                     AvailableActionState::CommandOnly => {
                         self.available_actions = vec![
                             AvailableActionState::Pass,
@@ -182,7 +203,11 @@ impl SequenceOfPlay {
     fn first_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::FirstAction => {
-                println!("{} performing first action: {:?}", self.current_player.unwrap(), self.state);
+                println!(
+                    "{} performing first action: {:?}",
+                    self.current_player.unwrap(),
+                    self.state
+                );
                 self.state = SequenceOfPlayState::GettingSecondAction;
                 return Ok(self);
             }
@@ -193,7 +218,10 @@ impl SequenceOfPlay {
     fn get_second_action(mut self) -> Result<Self, &'static str> {
         match self.state {
             SequenceOfPlayState::GettingSecondAction => {
-                println!("Getting second action from {}", self.current_player.unwrap());
+                println!(
+                    "Getting second action from {}",
+                    self.current_player.unwrap()
+                );
                 let selection: usize = Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&self.available_actions)
@@ -201,7 +229,11 @@ impl SequenceOfPlay {
                     .unwrap();
                 println!("Selected {}", self.available_actions[selection]);
                 match self.available_actions[selection] {
-                    AvailableActionState::Pass => return Ok(self),
+                    AvailableActionState::Pass => {
+                        self.old_state = Some(self.state);
+                        self.state = SequenceOfPlayState::Passing;
+                        return Ok(self);
+                    }
                     AvailableActionState::LimitedCommand => {}
                     AvailableActionState::Event => {}
                     AvailableActionState::CommandFeat => {}
@@ -267,65 +299,86 @@ fn main() {
     // TODO: Should not be advancing player every state transition, only after actions taken
     // Iterable instead of vec?
     // Also worth considering if event deck will be part of SequenceOfPlay
+
+    let test_card_0: Event = Event {
+        eligibility: vec![
+            Player::Civitates,
+            Player::Dux,
+            Player::Saxons,
+            Player::Scotti,
+        ],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+    };
+    let test_card_1: Event = Event {
+        eligibility: vec![
+            Player::Scotti,
+            Player::Saxons,
+            Player::Dux,
+            Player::Civitates,
+        ],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+    };
+
+    let mut cards: std::vec::IntoIter<Event> = vec![test_card_0, test_card_1].into_iter();
+    let mut curr_card: Option<Event> = cards.next();
     loop {
-        for p in vec![Civitates, Dux, Saxons, Scotti] {
-            match sop.player_eligibilities.get(&p).unwrap() {
-                Eligible => sop.current_player = Some(p),
-                Ineligible => {
-                    println!("{} is ineligible. Continuing...", p);
-                    continue;
-                },
-                Passed => panic!("{} is passed, which is invalid", p),
-                Acted => panic!("{} has acted, which is invalid", p),
+        match curr_card {
+            Some(ref e) => {
+                let mut curr_eligibility_order: std::vec::IntoIter<Player> =
+                    e.eligibility.clone().into_iter();
+                let mut curr_player: Option<Player> = curr_eligibility_order.next();
+                loop {
+                    match curr_player {
+                        Some(p) => {
+                            match sop.player_eligibilities.get(&p).unwrap() {
+                                Eligible => sop.current_player = Some(p),
+                                Ineligible => {
+                                    println!("{} is ineligible. Continuing...", p);
+                                    continue;
+                                }
+                                Passed => panic!("{} is passed, which is invalid", p),
+                                Acted => panic!("{} has acted, which is invalid", p),
+                            }
+                            sop.current_player = Some(p);
+                            match sop.state {
+                                SequenceOfPlayState::Passing => {
+                                    sop = sop.pass().unwrap();
+                                    curr_player = curr_eligibility_order.next();
+                                }
+                                SequenceOfPlayState::GettingFirstAction => {
+                                    sop = sop.get_first_action().unwrap();
+                                }
+                                SequenceOfPlayState::FirstAction => {
+                                    sop = sop.first_action().unwrap();
+                                    curr_player = curr_eligibility_order.next();
+                                }
+                                SequenceOfPlayState::GettingSecondAction => {
+                                    sop = sop.get_second_action().unwrap();
+                                }
+                                SequenceOfPlayState::SecondAction => {
+                                    sop = sop.second_action().unwrap();
+                                    curr_player = curr_eligibility_order.next();
+                                }
+                                SequenceOfPlayState::EndOfRound => {
+                                    sop = sop.cleanup().unwrap();
+                                }
+                            }
+                            
+                        }
+                        None => {
+                            println!("Game end");
+                            break;
+                        }
+                    }
+                    
+                }
+                curr_card = cards.next();
             }
-            sop.current_player = Some(p);
-            match sop.state {
-                SequenceOfPlayState::Passing => {}
-                SequenceOfPlayState::GettingFirstAction => {
-                    sop = sop.get_first_action().unwrap();
-                }
-                SequenceOfPlayState::FirstAction => {
-                    sop = sop.first_action().unwrap();
-                }
-                SequenceOfPlayState::GettingSecondAction => {
-                    sop = sop.get_second_action().unwrap();
-                }
-                SequenceOfPlayState::SecondAction => {
-                    sop = sop.second_action().unwrap();
-                }
-                SequenceOfPlayState::EndOfRound => {
-                    sop = sop.cleanup().unwrap();
-                }
-            }
+            None => break,
         }
     }
-
-    let mut test_card_0: Event = Event {
-        eligibility: vec![
-            Player::Civitates,
-            Player::Dux,
-            Player::Saxons,
-            Player::Scotti,
-        ],
-        unshaded: None,
-        shaded: None,
-        historical_notes: String::from(""),
-    };
-    let mut test_card_1: Event = Event {
-        eligibility: vec![
-            Player::Scotti,
-            Player::Saxons,
-            Player::Dux,
-            Player::Civitates,
-        ],
-        unshaded: None,
-        shaded: None,
-        historical_notes: String::from(""),
-    };
-    let mut test_card_view: CardManager = CardManager {
-        deck: &mut vec![],
-        current_event: &test_card_0,
-        upcoming_event: &test_card_1,
-        discard: &mut vec![],
-    };
 }
