@@ -7,10 +7,8 @@ use crate::Player::Civitates;
 use crate::Player::Dux;
 use crate::Player::Saxons;
 use crate::Player::Scotti;
-use crate::PlayerState::Acted;
 use crate::PlayerState::Eligible;
-use crate::PlayerState::Ineligible;
-use crate::PlayerState::Passed;
+
 // State
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -52,6 +50,12 @@ struct Event {
     historical_notes: String,
 }
 
+impl fmt::Display for Event {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.eligibility)
+    }
+}
+
 struct CardManager<'a> {
     deck: &'a mut Vec<Event>,
     current_event: &'a Event,
@@ -63,16 +67,100 @@ struct CardManager<'a> {
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 enum SequenceOfPlayState {
-    GettingFirstAction,
-    FirstAction,
-    GettingSecondAction,
-    SecondAction,
-    Passing,
-    EndOfRound,
+    GettingAction,
+    Acting,
+    Reseting,
 }
 
 #[derive(Clone, Copy, Debug)]
 enum AvailableActionState {
+    Start,
+    A,
+    B,
+    C,
+    None,
+}
+
+#[derive(Clone, Debug)]
+struct AvailableActions {
+    a: Vec<Action>,
+    state: AvailableActionState,
+}
+
+impl AvailableActions {
+    fn new() -> Self {
+        AvailableActions {
+            a: vec![
+                Action::Pass,
+                Action::CommandOnly,
+                Action::CommandFeat,
+                Action::Event,
+            ],
+            state: AvailableActionState::Start,
+        }
+    }
+
+    fn update_available_actions(self, selection: Option<Action>) -> AvailableActions {
+        match self.state {
+            AvailableActionState::Start => match selection.unwrap() {
+                Action::Pass => self,
+                Action::CommandOnly => AvailableActions {
+                    a: vec![Action::Pass, Action::LimitedCommand],
+                    state: AvailableActionState::A,
+                },
+                Action::CommandFeat => AvailableActions {
+                    a: vec![Action::Pass, Action::Event, Action::LimitedCommand],
+                    state: AvailableActionState::B,
+                },
+                Action::Event => AvailableActions {
+                    a: vec![Action::Pass, Action::CommandFeat],
+                    state: AvailableActionState::C,
+                },
+                _ => panic!("Invalid selected action for start"),
+            },
+            AvailableActionState::A => match selection.unwrap() {
+                Action::Pass => self,
+                Action::LimitedCommand => AvailableActions {
+                    a: vec![],
+                    state: AvailableActionState::None,
+                },
+                _ => panic!("Invalid selected action from Command Only"),
+            },
+            AvailableActionState::B => match selection.unwrap() {
+                Action::Pass => self,
+                Action::Event => AvailableActions {
+                    a: vec![],
+                    state: AvailableActionState::None,
+                },
+                Action::LimitedCommand => AvailableActions {
+                    a: vec![],
+                    state: AvailableActionState::None,
+                },
+                _ => panic!("Invalid selected action from Command + Feat"),
+            },
+            AvailableActionState::C => match selection.unwrap() {
+                Action::Pass => self,
+                Action::CommandFeat => AvailableActions {
+                    a: vec![],
+                    state: AvailableActionState::None,
+                },
+                _ => panic!("Invalid selected action from Event"),
+            },
+            AvailableActionState::None => AvailableActions {
+                a: vec![
+                    Action::Pass,
+                    Action::CommandOnly,
+                    Action::CommandFeat,
+                    Action::Event,
+                ],
+                state: AvailableActionState::Start,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+enum Action {
     Pass,
     CommandOnly,
     LimitedCommand,
@@ -80,14 +168,14 @@ enum AvailableActionState {
     Event,
 }
 
-impl fmt::Display for AvailableActionState {
+impl fmt::Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AvailableActionState::Pass => write!(f, "Pass"),
-            AvailableActionState::CommandOnly => write!(f, "CommandOnly"),
-            AvailableActionState::LimitedCommand => write!(f, "LimitedCommand"),
-            AvailableActionState::CommandFeat => write!(f, "CommandFeat"),
-            AvailableActionState::Event => write!(f, "Event"),
+            Action::Pass => write!(f, "Pass"),
+            Action::CommandOnly => write!(f, "CommandOnly"),
+            Action::LimitedCommand => write!(f, "LimitedCommand"),
+            Action::CommandFeat => write!(f, "CommandFeat"),
+            Action::Event => write!(f, "Event"),
         }
     }
 }
@@ -104,10 +192,10 @@ enum PlayerState {
 #[derive(Clone)]
 struct SequenceOfPlay {
     player_eligibilities: HashMap<Player, PlayerState>,
+    eligibility_order: Vec<Player>,
     state: SequenceOfPlayState,
-    available_actions: Vec<AvailableActionState>,
-    current_player: Option<Player>,
-    old_state: Option<SequenceOfPlayState>,
+    available_actions: AvailableActions,
+    selected_action: Option<Action>,
 }
 
 impl fmt::Display for SequenceOfPlay {
@@ -129,7 +217,7 @@ impl fmt::Display for SequenceOfPlay {
     Give cards names and print them, round number
 */
 impl SequenceOfPlay {
-    fn new() -> Self {
+    fn new(e: Vec<Player>) -> Self {
         let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
         player_eligibilities.insert(Civitates, Eligible);
         player_eligibilities.insert(Dux, Eligible);
@@ -137,187 +225,57 @@ impl SequenceOfPlay {
         player_eligibilities.insert(Scotti, Eligible);
         SequenceOfPlay {
             player_eligibilities: player_eligibilities,
-            state: SequenceOfPlayState::GettingFirstAction,
-            available_actions: vec![
-                AvailableActionState::Pass,
-                AvailableActionState::CommandOnly,
-                AvailableActionState::CommandFeat,
-                AvailableActionState::Event,
-            ],
-            current_player: None,
-            old_state: None,
+            state: SequenceOfPlayState::GettingAction,
+            available_actions: AvailableActions::new(),
+            eligibility_order: e,
+            selected_action: None,
         }
     }
 
-    fn pass(mut self) -> Result<Self, &'static str> {
+    fn get_action(mut self, curr_player: Player) -> Result<Self, &'static str> {
         match self.state {
-            SequenceOfPlayState::Passing => {
-                println!("{} chose to pass", self.current_player.unwrap());
-                match self.old_state {
-                    Some(s) => {
-                        self.state = s;
-                        print!(
-                            "{} has been set from {:?} to ",
-                            self.current_player.unwrap(),
-                            self.player_eligibilities
-                                .get(&self.current_player.unwrap())
-                                .unwrap()
-                        );
-                        self.player_eligibilities
-                            .insert(self.current_player.unwrap(), Passed);
-                        print!(
-                            "{:?}\n\n",
-                            self.player_eligibilities
-                                .get(&self.current_player.unwrap())
-                                .unwrap()
-                        );
-                    }
-                    None => panic!("Passed when there was no old state stored!"),
-                }
-
-                return Ok(self);
-            }
-            _ => Err("Can only do pass in Passing state"),
-        }
-    }
-
-    fn get_first_action(mut self) -> Result<Self, &'static str> {
-        match self.state {
-            SequenceOfPlayState::GettingFirstAction => {
-                println!("\n\nGetting first action from {}", self.current_player.unwrap());
-                let selection: usize = Select::new()
+            SequenceOfPlayState::GettingAction => {
+                println!("\n\nGetting first action from {}", curr_player,);
+                let selection: Action = self.available_actions.a[Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
-                    .items(&self.available_actions)
+                    .items(&self.available_actions.a)
                     .interact()
-                    .unwrap();
-                println!("Selected {}", self.available_actions[selection]);
-                match self.available_actions[selection] {
-                    AvailableActionState::Pass => {
-                        self.old_state = Some(self.state);
-                        self.state = SequenceOfPlayState::Passing;
-                        return Ok(self);
-                    }
-                    AvailableActionState::CommandOnly => {
-                        self.available_actions = vec![
-                            AvailableActionState::Pass,
-                            AvailableActionState::LimitedCommand,
-                        ]
-                    }
-                    AvailableActionState::CommandFeat => {
-                        self.available_actions = vec![
-                            AvailableActionState::Pass,
-                            AvailableActionState::LimitedCommand,
-                            AvailableActionState::Event,
-                        ]
-                    }
-                    AvailableActionState::Event => {
-                        self.available_actions = vec![
-                            AvailableActionState::Pass,
-                            AvailableActionState::CommandFeat,
-                        ]
-                    }
-                    _ => return Err("Selected invalid action"),
-                }
-                self.state = SequenceOfPlayState::FirstAction;
+                    .unwrap()];
+                println!("Selected {}", selection);
+                self.selected_action = Some(selection);
+                self.state = SequenceOfPlayState::Acting;
                 return Ok(self);
             }
-            _ => Err("Can only get first action in GettingFirstAction state"),
+            _ => Err("Can only get action in GettingAction state"),
         }
     }
 
-    fn first_action(mut self) -> Result<Self, &'static str> {
+    fn acting(mut self, curr_player: Player) -> Result<Self, &'static str> {
         match self.state {
-            SequenceOfPlayState::FirstAction => {
-                println!(
-                    "{} performing first action: {:?}",
-                    self.current_player.unwrap(),
-                    self.state
-                );
-                self.state = SequenceOfPlayState::GettingSecondAction;
+            SequenceOfPlayState::Acting => {
+                println!("{} performing action: {:?}", curr_player, self.selected_action.unwrap());
+                self.state = SequenceOfPlayState::GettingAction;
+                self.available_actions = self.available_actions.update_available_actions(self.selected_action);
                 return Ok(self);
             }
-            _ => Err("Can only do first action in FirstAction state"),
-        }
-    }
-
-    fn get_second_action(mut self) -> Result<Self, &'static str> {
-        match self.state {
-            SequenceOfPlayState::GettingSecondAction => {
-                println!(
-                    "\nGetting second action from {}",
-                    self.current_player.unwrap()
-                );
-                let selection: usize = Select::new()
-                    .with_prompt(format!("Select one of the following actions!"))
-                    .items(&self.available_actions)
-                    .interact()
-                    .unwrap();
-                println!("Selected {}", self.available_actions[selection]);
-                match self.available_actions[selection] {
-                    AvailableActionState::Pass => {
-                        self.old_state = Some(self.state);
-                        self.state = SequenceOfPlayState::Passing;
-                        return Ok(self);
-                    }
-                    AvailableActionState::LimitedCommand => {}
-                    AvailableActionState::Event => {}
-                    AvailableActionState::CommandFeat => {}
-                    _ => return Err("Selected invalid action"),
-                }
-                self.available_actions = vec![
-                    AvailableActionState::Pass,
-                    AvailableActionState::CommandOnly,
-                    AvailableActionState::CommandFeat,
-                    AvailableActionState::Event,
-                ];
-                self.state = SequenceOfPlayState::SecondAction;
-                return Ok(self);
-            }
-            _ => Err("Can only get second action in GettingSecondAction state"),
-        }
-    }
-
-    fn second_action(mut self) -> Result<Self, &'static str> {
-        match self.state {
-            SequenceOfPlayState::SecondAction => {
-                println!("{} performing second action", self.current_player.unwrap());
-                self.state = SequenceOfPlayState::EndOfRound;
-                return Ok(self);
-            }
-            _ => Err("Can only do second action in SecondAction state"),
+            _ => Err("Can only do action in Acting state"),
         }
     }
 
     fn cleanup(mut self) -> Result<Self, &'static str> {
         match self.state {
-            SequenceOfPlayState::EndOfRound => {
+            SequenceOfPlayState::Reseting => {
                 println!("Reseting for the next round");
-                self.state = SequenceOfPlayState::GettingFirstAction;
+                self.state = SequenceOfPlayState::GettingAction;
+                self.available_actions = self.available_actions.update_available_actions(None);
                 return Ok(self);
             }
-            _ => Err("Can only do cleanup in EndOfRound state"),
+            _ => Err("Can only do cleanup in Reseting state"),
         }
     }
 }
 
-fn main() {
-    /*
-       1. Build game
-           1. Create edge track with initial values
-           2. Build map
-           3. Create unit types?
-           4. Put stuff on map
-           5. Generate deck
-       2. Begin sequence of play
-       3. Loop
-    */
-
-    let mut sop: SequenceOfPlay = SequenceOfPlay::new();
-
-    // TODO: Should not be advancing player every state transition, only after actions taken
-    // Iterable instead of vec?
-    // Also worth considering if event deck will be part of SequenceOfPlay
-
+fn build_deck() -> Vec<Event> {
     let test_card_0: Event = Event {
         eligibility: vec![
             Player::Civitates,
@@ -340,61 +298,62 @@ fn main() {
         shaded: None,
         historical_notes: String::from(""),
     };
+    let test_card_2: Event = Event {
+        eligibility: vec![
+            Player::Dux,
+            Player::Saxons,
+            Player::Civitates,
+            Player::Scotti,
+        ],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+    };
+    return vec![test_card_0, test_card_1, test_card_2];
+}
 
-    let mut cards: std::vec::IntoIter<Event> = vec![test_card_0, test_card_1].into_iter();
-    let mut curr_card: Option<Event> = cards.next();
+fn main() {
+    /*
+       1. Build game
+           1. Create edge track with initial values
+           2. Build map
+           3. Create unit types?
+           4. Put stuff on map
+           5. Generate deck
+       2. Begin sequence of play
+       3. Loop
+    */
+
+
+    // TODO: when 2 players act and there are players left on the card, tries to go into the next round and crashes
+    let deck: Vec<Event> = build_deck();
+    let mut cards: std::vec::IntoIter<Event> = deck.into_iter();
+    let new_card: Event = cards.next().unwrap();
+    let mut sop: SequenceOfPlay = SequenceOfPlay::new(new_card.eligibility.clone());
+    let mut curr_order = new_card.eligibility.into_iter();
+    let mut cp: Option<Player> = curr_order.next();
     loop {
-        match curr_card {
-            Some(ref e) => {
-                let mut curr_eligibility_order: std::vec::IntoIter<Player> =
-                    e.eligibility.clone().into_iter();
-                let mut curr_player: Option<Player> = curr_eligibility_order.next();
-                loop {
-                    match curr_player {
-                        Some(p) => {
-                            match sop.player_eligibilities.get(&p).unwrap() {
-                                Eligible => sop.current_player = Some(p),
-                                Ineligible => {
-                                    println!("{} is ineligible. Continuing...", p);
-                                    continue;
-                                }
-                                Passed => panic!("{} is passed, which is invalid", p),
-                                Acted => panic!("{} has acted, which is invalid", p),
-                            }
-                            sop.current_player = Some(p);
-                            match sop.state {
-                                SequenceOfPlayState::Passing => {
-                                    sop = sop.pass().unwrap();
-                                    curr_player = curr_eligibility_order.next();
-                                }
-                                SequenceOfPlayState::GettingFirstAction => {
-                                    sop = sop.get_first_action().unwrap();
-                                }
-                                SequenceOfPlayState::FirstAction => {
-                                    sop = sop.first_action().unwrap();
-                                    curr_player = curr_eligibility_order.next();
-                                }
-                                SequenceOfPlayState::GettingSecondAction => {
-                                    sop = sop.get_second_action().unwrap();
-                                }
-                                SequenceOfPlayState::SecondAction => {
-                                    sop = sop.second_action().unwrap();
-                                    curr_player = curr_eligibility_order.next();
-                                }
-                                SequenceOfPlayState::EndOfRound => {
-                                    sop = sop.cleanup().unwrap();
-                                }
-                            }
-                        }
-                        None => {
-                            println!("Game end");
-                            break;
-                        }
-                    }
+        match cp {
+            Some(p) => match sop.state {
+                SequenceOfPlayState::GettingAction => {
+                    sop = sop.get_action(p).unwrap();
                 }
-                curr_card = cards.next();
-            }
+                SequenceOfPlayState::Acting => {
+                    sop = sop.acting(p).unwrap();
+                    cp = curr_order.next();
+                }
+                SequenceOfPlayState::Reseting => {
+                    sop = sop.cleanup().unwrap();
+                    break;
+                },
+            },
             None => break,
         }
     }
+    // TODO: Should not be advancing player every state transition, only after actions taken
+    // Also worth considering if event deck will be part of SequenceOfPlay
+
+    // Get our card
+    // Go through the factions in card order and get actions
+    // When 2 factions have acted or we have gone through the whole card, adjust eligibility and draw new card and new round
 }
