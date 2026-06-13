@@ -43,12 +43,21 @@ impl fmt::Debug for Player {
 }
 
 // Cards
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum EventType {
+    Standard,
+    Epoch,
+    Pivotal,
+}
+
 #[derive(Clone, Debug)]
 struct Event {
+    name: String,
     eligibility: Vec<Player>,
     unshaded: Option<u8>,
     shaded: Option<u8>,
     historical_notes: String,
+    event_type: EventType,
 }
 
 impl fmt::Display for Event {
@@ -56,7 +65,6 @@ impl fmt::Display for Event {
         write!(f, "{:?}", self.eligibility)
     }
 }
-
 
 // Sequence of Play
 
@@ -134,7 +142,9 @@ impl AvailableActions {
                 },
                 _ => panic!("Invalid selected action from Event"),
             },
-            AvailableActionState::End => panic!("We're finished with the round, just make a new AvailableActions"),
+            AvailableActionState::End => {
+                panic!("We're finished with the round, just make a new AvailableActions")
+            }
         }
     }
 }
@@ -195,8 +205,8 @@ impl fmt::Display for SequenceOfPlay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "Current state: {:?}\nPlayer eligibilities: {:#?}\nAvailable actions: {:#?}",
-            self.state, self.player_eligibilities, self.available_actions
+            "Player eligibilities: {:#?}\nAvailable actions: {:#?}",
+            self.player_eligibilities, self.available_actions
         )
     }
 }
@@ -236,7 +246,9 @@ impl SequenceOfPlay {
         println!("Checking for end of round...");
         match self.state {
             SequenceOfPlayState::CheckEndRound => {
-                if self.current_player > 3 || self.available_actions.state == AvailableActionState::End {
+                if self.current_player > 3
+                    || self.available_actions.state == AvailableActionState::End
+                {
                     print!("Ending round");
                     self.state = SequenceOfPlayState::ResetEligibility;
                 } else {
@@ -244,8 +256,11 @@ impl SequenceOfPlay {
                     self.state = SequenceOfPlayState::CheckPlayerStatus;
                 }
                 return self;
-            },
-            _ => panic!("Can only check end round in CheckEndRound, currently in {:?}", self.state),
+            }
+            _ => panic!(
+                "Can only check end round in CheckEndRound, currently in {:?}",
+                self.state
+            ),
         }
     }
 
@@ -253,22 +268,40 @@ impl SequenceOfPlay {
         println!("Checking player state...");
         match self.state {
             SequenceOfPlayState::CheckPlayerStatus => {
-                match self.player_eligibilities.get(&self.current_event.eligibility[self.current_player]).unwrap() {
+                match self
+                    .player_eligibilities
+                    .get(&self.current_event.eligibility[self.current_player])
+                    .unwrap()
+                {
                     PlayerState::Eligible => {
-                        println!("{} is eligible", self.current_event.eligibility[self.current_player]);
+                        println!(
+                            "{} is eligible",
+                            self.current_event.eligibility[self.current_player]
+                        );
                         self.state = SequenceOfPlayState::ChoosingAction;
                         return self;
-                    },
+                    }
                     PlayerState::Ineligible => {
-                        println!("{} is ineligible, proceeding to next player", self.current_event.eligibility[self.current_player]);
+                        println!(
+                            "{} is ineligible, proceeding to next player",
+                            self.current_event.eligibility[self.current_player]
+                        );
                         self.current_player += 1;
                         self.state = SequenceOfPlayState::CheckEndRound;
                         return self;
-                    },
-                    _ => panic!("While checking player status found a player already at {:?}", self.player_eligibilities.get(&self.current_event.eligibility[self.current_player]).unwrap())
+                    }
+                    _ => panic!(
+                        "While checking player status found a player already at {:?}",
+                        self.player_eligibilities
+                            .get(&self.current_event.eligibility[self.current_player])
+                            .unwrap()
+                    ),
                 }
-            },
-            _ => panic!("Can only check player status in CheckPlayerStatus, currently in {:?}", self.state),
+            }
+            _ => panic!(
+                "Can only check player status in CheckPlayerStatus, currently in {:?}",
+                self.state
+            ),
         }
     }
 
@@ -290,7 +323,10 @@ impl SequenceOfPlay {
                 self.state = SequenceOfPlayState::Acting;
                 return self;
             }
-            _ => panic!("Can only get action in GettingAction state, currently in {:?}", self.state),
+            _ => panic!(
+                "Can only get action in GettingAction state, currently in {:?}",
+                self.state
+            ),
         }
     }
 
@@ -304,10 +340,16 @@ impl SequenceOfPlay {
                 );
                 match self.selected_action.unwrap() {
                     Action::Pass => {
-                        self.player_eligibilities.insert(self.current_event.eligibility[self.current_player], PlayerState::Passed);
-                    },
+                        self.player_eligibilities.insert(
+                            self.current_event.eligibility[self.current_player],
+                            PlayerState::Passed,
+                        );
+                    }
                     _ => {
-                        self.player_eligibilities.insert(self.current_event.eligibility[self.current_player], PlayerState::Acted);
+                        self.player_eligibilities.insert(
+                            self.current_event.eligibility[self.current_player],
+                            PlayerState::Acted,
+                        );
                     }
                 }
                 self.state = SequenceOfPlayState::CheckEndRound;
@@ -365,8 +407,20 @@ impl SequenceOfPlay {
                 self.event_discard.push_front(self.current_event);
                 self.current_event = self.event_deck.pop_front().unwrap();
                 self.current_player = 0;
-                self.state = SequenceOfPlayState::ChoosingAction;
+                match self.event_deck[0].event_type {
+                    EventType::Standard => self.state = SequenceOfPlayState::ChoosingAction,
+                    EventType::Epoch => {
+                        self.state = SequenceOfPlayState::Epoch;
+                        let epoch: Event = self.event_deck.pop_front().unwrap();
+                        self.event_deck.push_front(self.current_event);
+                        self.current_event = epoch;
+                    }
+                    EventType::Pivotal => {
+                        panic!("How did a Pivotal get to be mixed into the deck???")
+                    }
+                }
                 println!("Events advanced\n\n");
+                println!("{}", self);
                 return self;
             }
             _ => {
@@ -377,91 +431,151 @@ impl SequenceOfPlay {
             }
         }
     }
+
+    fn epoch(mut self) -> Self {
+        println!("Begin Epoch round");
+        match self.state {
+            SequenceOfPlayState::Epoch => {
+                self.state = SequenceOfPlayState::AdvanceEvents;
+                return self;
+            }
+            _ => panic!("Attempting to do epoch round while in {:?}", self.state),
+        }
+    }
 }
 
 fn build_deck() -> VecDeque<Event> {
-    let test_card_0: Event = Event {
-        eligibility: vec![
-            Player::Civitates,
-            Player::Dux,
-            Player::Saxons,
-            Player::Scotti,
-        ],
+    let calleva_atrebatum: Event = Event {
+        name: String::from("Calleva Atrebatum"),
+        eligibility: vec![Saxons, Scotti, Dux, Civitates],
         unshaded: None,
         shaded: None,
         historical_notes: String::from(""),
+        event_type: EventType::Standard,
     };
-    let test_card_1: Event = Event {
-        eligibility: vec![
-            Player::Scotti,
-            Player::Saxons,
-            Player::Dux,
-            Player::Civitates,
-        ],
+    let ard_ri: Event = Event {
+        name: String::from("Ard Ri"),
+        eligibility: vec![Scotti, Dux, Saxons, Civitates],
         unshaded: None,
         shaded: None,
         historical_notes: String::from(""),
+        event_type: EventType::Standard,
     };
-    let test_card_2: Event = Event {
-        eligibility: vec![
-            Player::Dux,
-            Player::Saxons,
-            Player::Civitates,
-            Player::Scotti,
-        ],
+    let anderida: Event = Event {
+        name: String::from("Anderida"),
+        eligibility: vec![Saxons, Dux, Scotti, Civitates],
         unshaded: None,
         shaded: None,
         historical_notes: String::from(""),
+        event_type: EventType::Standard,
     };
-    let mut deck = VecDeque::new();
-    deck.push_back(test_card_0);
-    deck.push_back(test_card_1);
-    deck.push_back(test_card_2);
+    let classis_britannica: Event = Event {
+        name: String::from("Classis Britannica"),
+        eligibility: vec![Dux, Saxons, Civitates, Scotti],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let recruits: Event = Event {
+        name: String::from("Recruits"),
+        eligibility: vec![Dux, Scotti, Saxons, Civitates],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let deira: Event = Event {
+        name: String::from("Deira"),
+        eligibility: vec![Civitates, Saxons, Dux, Scotti],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let with_the_cross_on_his_shoulders: Event = Event {
+        name: String::from("With The Cross On His Shoulders"),
+        eligibility: vec![Civitates, Scotti, Dux, Saxons],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let ambrosius_aurelianus: Event = Event {
+        name: String::from("Ambrosius Aurelianus"),
+        eligibility: vec![Civitates, Dux, Scotti, Saxons],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let celyddon_coed: Event = Event {
+        name: String::from("Celyddon Coed"),
+        eligibility: vec![Scotti, Dux, Civitates, Saxons],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let fickle_weather: Event = Event {
+        name: String::from("Fickle Weather"),
+        eligibility: vec![Scotti, Dux, Civitates, Saxons],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Standard,
+    };
+    let magnus_maximus: Event = Event {
+        name: String::from("Magnus Maximus"),
+        eligibility: vec![],
+        unshaded: None,
+        shaded: None,
+        historical_notes: String::from(""),
+        event_type: EventType::Epoch,
+    };
+    let mut deck: VecDeque<Event> = VecDeque::new();
+    deck.push_back(calleva_atrebatum);
+    deck.push_back(ard_ri);
+    deck.push_back(anderida);
+    deck.push_back(classis_britannica);
+    deck.push_back(recruits);
+    deck.push_back(deira);
+    deck.push_back(with_the_cross_on_his_shoulders);
+    deck.push_back(ambrosius_aurelianus);
+    deck.push_back(celyddon_coed);
+    deck.push_back(fickle_weather);
+    deck.push_back(magnus_maximus);
     return deck;
 }
 
 fn main() {
-    /*
-       1. Build game
-           1. Create edge track with initial values
-           2. Build map
-           3. Create unit types?
-           4. Put stuff on map
-           5. Generate deck
-       2. Begin sequence of play
-       3. Loop
-    */
-
-    // TODO: when 2 players act and there are players left on the card, tries to go into the next round and crashes
     let deck: VecDeque<Event> = build_deck();
     let mut sop: SequenceOfPlay = SequenceOfPlay::new(deck);
     loop {
         match sop.state {
             SequenceOfPlayState::CheckEndRound => {
                 sop = sop.check_end_round();
-            },
+            }
             SequenceOfPlayState::CheckPlayerStatus => {
                 sop = sop.check_player_status();
-            },
+            }
             SequenceOfPlayState::ChoosingAction => {
                 sop = sop.get_action();
-            },
+            }
             SequenceOfPlayState::Acting => {
                 sop = sop.acting();
-            },
+            }
             SequenceOfPlayState::ResetEligibility => {
                 sop = sop.reset_eligibility();
-            },
+            }
             SequenceOfPlayState::AdvanceEvents => {
                 sop = sop.advance_events();
-            },
-            SequenceOfPlayState::Epoch => todo!(),
+            }
+            SequenceOfPlayState::Epoch => {
+                sop.epoch();
+                println!("Only one Epoch so far, more to come later");
+                break;
+            }
         };
     }
-    // TODO: Should not be advancing player every state transition, only after actions taken
-    // Also worth considering if event deck will be part of SequenceOfPlay
-
-    // Get our card
-    // Go through the factions in card order and get actions
-    // When 2 factions have acted or we have gone through the whole card, adjust eligibility and draw new card and new round
 }
