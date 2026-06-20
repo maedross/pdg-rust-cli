@@ -226,14 +226,8 @@ mod sequence_of_play {
         }
     }
 
-    /*
-        TODO: Implement player state checking and setting
-        When a player selected a non-pass action, they should be set to acting
-        When getting action, should be checking player is eligible
-        Cleanup should move ineligible and passed players to eligible, acted to ineligible
-
-        Give cards names and print them, round number
-    */
+    // TODO: Track players in hashmap and vecs
+    // TODO: Pretty print
     impl SequenceOfPlay {
         pub fn new(mut events: VecDeque<Event>) -> Self {
             let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
