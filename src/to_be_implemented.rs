@@ -26,54 +26,9 @@ struct EdgeTrack {
     scotti_renown_threshold: u8,
 }
 
-// Board
 
-struct Space<'a> {
-    name: String,
-    space_type: SpaceType,
-    terrain: Option<Terrain>,
-    adj_spaces: Vec<&'a Space<'a>>,
-    adj_seas: Vec<&'a Sea<'a>>,
-    pop: u8,
-    max_pop: u8,
-    top_prosp: u8,
-    bottom_prosp: u8,
-    stronghold_sites: Vec<StrongholdSite<'a>>,
-    control: Option<Player>,
-}
 
-enum SpaceType {
-    Region,
-    City,
-}
 
-struct Sea<'a> {
-    name: String,
-    patrol: bool,
-    adj: Vec<&'a Space<'a>>,
-}
-
-struct StrongholdSite<'a> {
-    name: String,
-    site_type: StrongholdSiteType,
-    stronghold: Option<&'a Stronghold>,
-}
-
-enum StrongholdSiteType {
-    Hillfort,
-    Town,
-    City,
-}
-
-struct City {}
-
-struct Region {}
-
-enum Terrain {
-    Clear,
-    Fens,
-    Hills,
-}
 
 // Holding Boxes
 
@@ -120,68 +75,9 @@ struct DuxOutOfPlay {
     cavalry: u8,
 }
 
-// Components
 
-enum Nationality {
-    Briton,
-    Saxon,
-    Scotti,
-}
 
-struct Stronghold {
-    controller: Player,
-    class: StrongholdClass,
-    nationality: Nationality,
-}
 
-enum StrongholdClass {
-    Fort {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Hillfort {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Town {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Settlement {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Eboracum {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-    Londinium {
-        escalade: u8,
-        garrison: u8,
-        capacity: u8,
-    },
-}
-
-struct Unit {
-    designation: UnitClass,
-    controller: Player,
-    nationality: Nationality,
-    plunder: bool,
-}
-
-enum UnitClass {
-    Cavalry,
-    Comitates,
-    Foederati,
-    Militia,
-    Raider,
-    Warband,
-}
 // Commands
 
 /*
