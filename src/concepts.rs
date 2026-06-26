@@ -1,7 +1,11 @@
 use colored::Colorize;
 use std::fmt;
 
-use crate::concepts::{Nationality::Briton, Player::Civitates, UnitClass::{Comitates, Militia}};
+use crate::concepts::{
+    Nationality::Briton,
+    Player::Civitates,
+    UnitClass::{Comitates, Militia},
+};
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Player {
     Civitates,
@@ -33,59 +37,11 @@ impl fmt::Debug for Player {
 }
 
 // Board
-#[derive(Clone, Debug)]
-pub struct Space<'a> {
-    pub name: String,
-    pub space_type: SpaceType,
-    pub terrain: Option<Terrain>,
-    pub adj_spaces: Vec<&'a Space<'a>>,
-    pub adj_seas: Vec<&'a Sea<'a>>,
-    pub pop: u8,
-    pub max_pop: u8,
-    pub top_prosp: u8,
-    pub bottom_prosp: u8,
-    pub stronghold_sites: Vec<StrongholdSite<'a>>,
-    pub units: Vec<Unit>,
-    pub control: Option<Player>,
-}
+
 
 struct PieceCount {
     units: Vec<Unit>,
     strongholds: Vec<Stronghold>,
-}
-
-#[derive(Clone, Debug)]
-pub enum SpaceType {
-    Region,
-    City,
-}
-
-#[derive(Clone, Debug)]
-pub struct Sea<'a> {
-    name: String,
-    patrol: bool,
-    adj: Vec<&'a Space<'a>>,
-}
-
-#[derive(Clone, Debug)]
-pub struct StrongholdSite<'a> {
-    pub name: String,
-    pub site_type: StrongholdSiteType,
-    pub stronghold: Option<&'a Stronghold>,
-}
-
-#[derive(Clone, Debug)]
-pub enum StrongholdSiteType {
-    Hillfort,
-    Town,
-    City,
-}
-
-#[derive(Clone, Debug)]
-pub enum Terrain {
-    Clear,
-    Fens,
-    Hills,
 }
 
 // Components
@@ -107,48 +63,44 @@ pub struct Stronghold {
 }
 
 impl Stronghold {
-    pub fn new(class: StrongholdClass, player: Option<Player>, nation: Option<Nationality>) -> Stronghold {
+    pub fn new(
+        class: StrongholdClass,
+        player: Option<Player>,
+        nation: Option<Nationality>,
+    ) -> Stronghold {
         match class {
-            StrongholdClass::Fort => {
-                Stronghold {
-                    controller: Player::Dux,
-                    class: class,
-                    nationality: Nationality::Briton,
-                    escalade: 1.,
-                    garrison: 1,
-                    capacity: 2,
-                }
+            StrongholdClass::Fort => Stronghold {
+                controller: Player::Dux,
+                class: class,
+                nationality: Nationality::Briton,
+                escalade: 1.,
+                garrison: 1,
+                capacity: 2,
             },
-            StrongholdClass::Hillfort => {
-                Stronghold {
-                    controller: Player::Civitates,
-                    class: class,
-                    nationality: Nationality::Briton,
-                    escalade: 0.5,
-                    garrison: 1,
-                    capacity: 2,
-                }
+            StrongholdClass::Hillfort => Stronghold {
+                controller: Player::Civitates,
+                class: class,
+                nationality: Nationality::Briton,
+                escalade: 0.5,
+                garrison: 1,
+                capacity: 2,
             },
-            StrongholdClass::Town => {
-                Stronghold {
-                    controller: Player::Civitates,
-                    class: class,
-                    nationality: Nationality::Briton,
-                    escalade: 0.5,
-                    garrison: 2,
-                    capacity: 4,
-                }
+            StrongholdClass::Town => Stronghold {
+                controller: Player::Civitates,
+                class: class,
+                nationality: Nationality::Briton,
+                escalade: 0.5,
+                garrison: 2,
+                capacity: 4,
             },
-            StrongholdClass::Settlement => {
-                Stronghold {
-                    controller: player.unwrap(),
-                    class: class,
-                    nationality: nation.unwrap(),
-                    escalade: 0.5,
-                    garrison: 0,
-                    capacity: 2,
-                }
-            }
+            StrongholdClass::Settlement => Stronghold {
+                controller: player.unwrap(),
+                class: class,
+                nationality: nation.unwrap(),
+                escalade: 0.5,
+                garrison: 0,
+                capacity: 2,
+            },
         }
     }
 }
@@ -206,5 +158,25 @@ impl Unit {
             ret.push(militia.clone());
         }
         return ret;
+    }
+}
+
+pub struct CivitatesHolding {
+    out_of_play_comitates: u8,
+    available_comitates: u8,
+    available_militia: u8,
+    available_hillforts: u8,
+    available_towns: u8,
+}
+
+impl CivitatesHolding {
+    pub fn blank() -> CivitatesHolding {
+        CivitatesHolding {
+            out_of_play_comitates: 15,
+            available_comitates: 0,
+            available_militia: 30,
+            available_hillforts: 15,
+            available_towns: 15,
+        }
     }
 }

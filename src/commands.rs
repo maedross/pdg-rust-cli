@@ -1,24 +1,24 @@
-use super::concepts::{
-    Player, Space, StrongholdClass, StrongholdSite, StrongholdSiteType, Unit,
-};
+use super::concepts::{Player, Space, StrongholdClass, StrongholdSite, StrongholdSiteType, Unit, CivitatesHolding};
 use dialoguer::Input;
 
 // TODO: func for selecting spaces
-
-pub fn muster(loc: Space) -> Space {
+// TODO: Muster (and other commands) as state machine?
+// States would be selecting spaces and spending, type of muster
+// But need to allow for feats as well
+pub fn muster(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) {
     let resulting_loc: Space;
+    let w: u8;
     if true {
-        resulting_loc = muster_units(loc);
+        (resulting_loc, w) = muster_units(loc, wealth, avail);
     } else {
-        resulting_loc = muster_units(loc);
+        (resulting_loc, w) = muster_units(loc, wealth, avail);
         // resulting_loc = muster_strongholds(loc);
     }
-    return resulting_loc;
+    return (resulting_loc, w);
 }
 
 // TODO: Check available when adding units
-// TODO: Spend wealth for Comitates
-fn muster_units(loc: Space) -> Space {
+fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) {
     let mut resulting_loc: Space<'_> = loc.clone();
     let mut cubes_to_place = 0;
 
@@ -43,8 +43,8 @@ fn muster_units(loc: Space) -> Space {
     }
 
     println!(
-        "Placing {} cubes. Place Comitates instead of Militia?",
-        cubes_to_place
+        "Placing {} cubes. Place Comitates instead of Militia?\nEach Comitates costs 1 Wealth.\nCurrent Wealth: {}",
+        cubes_to_place, wealth
     );
     let mut num_com: Result<u8, std::num::ParseIntError>;
     loop {
@@ -58,16 +58,32 @@ fn muster_units(loc: Space) -> Space {
         } else {
             num_com = comitates_to_place.parse::<u8>();
         }
-        match  num_com {
-            Ok(_) => break,
+        match num_com {
+            Ok(n) => {
+                if n > cubes_to_place {
+                    println!(
+                        "Error: tried placing {} Comitates but there are only {} cubes to place",
+                        n, cubes_to_place
+                    );
+                }
+                if n > wealth {
+                    println!(
+                        "Error: tried placing {} Comitates but may only spend {} Wealth",
+                        n, wealth
+                    );
+                } else {
+                    println!("Placed {} Comitates", num_com.unwrap());
+                    break;
+                }
+            }
             _ => println!("Invalid input, must enter a non-negative integer"),
         }
     }
-    println!("Placed {} Comitates", num_com.unwrap());
+
     resulting_loc
         .units
         .append(&mut Unit::con_militia(cubes_to_place));
-    return resulting_loc;
+    return (resulting_loc, wealth);
 }
 
 // fn muster_strongholds(loc: Space) -> Space {}
@@ -94,6 +110,8 @@ mod tests {
             stronghold: None,
         };
 
+        let avail: CivitatesHolding = CivitatesHolding::blank();
+
         let test_space: Space<'_> = Space {
             name: String::from("Durotriges"),
             space_type: SpaceType::Region,
@@ -108,7 +126,7 @@ mod tests {
             units: vec![],
             control: Some(Player::Civitates),
         };
-        let after: Space<'_> = muster(test_space);
+        let (after, _): (Space<'_>, u8) = muster(test_space, 2, avail);
         assert_eq!(after.units.len(), 3);
     }
 }

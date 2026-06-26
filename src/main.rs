@@ -7,6 +7,7 @@ mod events;
 mod sequence_of_play;
 mod setup;
 mod commands;
+mod board;
 
 fn main() {
     let deck: VecDeque<Event> = setup::build_deck();
