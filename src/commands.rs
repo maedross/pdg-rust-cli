@@ -1,4 +1,5 @@
-use super::concepts::{Player, Space, StrongholdClass, StrongholdSite, StrongholdSiteType, Unit, CivitatesHolding};
+use super::board::{Space, StrongholdSite, StrongholdSiteType};
+use super::concepts::{CivitatesHolding, Player, StrongholdClass, Unit};
 use dialoguer::Input;
 
 // TODO: func for selecting spaces
@@ -90,9 +91,8 @@ fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) 
 
 #[cfg(test)]
 mod tests {
-    use super::super::concepts::{
-        Player, Space, SpaceType, Stronghold, StrongholdSite, StrongholdSiteType, Terrain,
-    };
+    use super::super::board::{Space, SpaceType, StrongholdSite, StrongholdSiteType, Terrain};
+    use super::super::concepts::{Player, Stronghold};
 
     use super::*;
 
@@ -113,6 +113,7 @@ mod tests {
         let avail: CivitatesHolding = CivitatesHolding::blank();
 
         let test_space: Space<'_> = Space {
+            id: 0,
             name: String::from("Durotriges"),
             space_type: SpaceType::Region,
             terrain: Some(Terrain::Clear),
