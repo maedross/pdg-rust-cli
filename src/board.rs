@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use super::concepts::{Player, Stronghold, Unit};
 
@@ -38,6 +38,7 @@ pub struct Space<'a> {
     pub terrain: Option<Terrain>,
     pub adj_spaces: Vec<u8>,
     pub adj_seas: Vec<u8>,
+    pub adj_road: Vec<u8>,
     pub pop: u8,
     pub max_pop: u8,
     pub top_prosp: u8,
@@ -63,6 +64,7 @@ impl<'a> Space<'_> {
             terrain,
             adj_spaces: vec![],
             adj_seas: vec![],
+            adj_road: vec![],
             pop,
             max_pop: pop + 1,
             top_prosp: 0,
@@ -555,6 +557,23 @@ fn build_map() -> Map<'static> {
     ];
     trinovantes.adj_spaces = vec![iceni.id, londinium.id, catuvellauni.id];
     votadini.adj_spaces = vec![novantae.id, carvetii.id, textoverdi.id];
+
+    // ADD ROADS
+    atrebates.adj_road = vec![londinium.id, durotriges.id];
+    cantiaci.adj_road = vec![londinium.id];
+    carvetii.adj_road = vec![textoverdi.id];
+    catuvellauni.adj_road = vec![corieltauvi.id, londinium.id, dobunni.id];
+    corieltauvi.adj_road = vec![parisi.id, catuvellauni.id, dobunni.id];
+    cornovii.adj_road = vec![decangli.id, dobunni.id];
+    decangli.adj_road = vec![cornovii.id];
+    dobunni.adj_road = vec![silures.id, cornovii.id, corieltauvi.id, catuvellauni.id, durotriges.id];
+    durotriges.adj_road = vec![dobunni.id, atrebates.id];
+    eboracum.adj_road = vec![textoverdi.id, parisi.id];
+    londinium.adj_road = vec![catuvellauni.id, trinovantes.id, cantiaci.id, atrebates.id];
+    parisi.adj_road = vec![eboracum.id, corieltauvi.id];
+    silures.adj_road = vec![dobunni.id];
+    textoverdi.adj_road = vec![carvetii.id, eboracum.id];
+    trinovantes.adj_road = vec![londinium.id];
 
     // ADD ADJACENT SEAS
     atrebates.adj_seas = vec![oceanus_britannicus.id];
