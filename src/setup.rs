@@ -1,5 +1,12 @@
 use std::collections::VecDeque;
+use std::todo;
 
+use crate::board::build_map;
+
+use super::board::{
+    Board, CivitatesAvailable, CivitatesNotYetInPlay, DuxAvailable, DuxCasualties, DuxOutOfPlay,
+    SaxonsAvailable, ScottiAvailable, ScottiNiallNoigiallach,
+};
 use super::concepts::Player::{Civitates, Dux, Saxons, Scotti};
 use super::events::{Event, EventType};
 
@@ -105,4 +112,89 @@ pub fn build_deck() -> VecDeque<Event> {
     deck.push_back(fickle_weather);
     deck.push_back(magnus_maximus);
     return deck;
+}
+
+pub fn setup_barbarian_conspiracy() -> Board<'static> {
+    Board {
+        map: todo!(),
+        edge_track: todo!(),
+        civitates_available: todo!(),
+        civitates_not_yet_in_play: todo!(),
+        dux_available: todo!(),
+        dux_casualties: todo!(),
+        dux_out_of_play: todo!(),
+        saxon_available: todo!(),
+        scotti_available: todo!(),
+        scotti_niall_noigiallach: todo!(),
+        imperium: todo!(),
+        roads_maintained: todo!(),
+    }
+}
+
+pub fn setup_petty_tyrants() -> Board<'static> {
+    Board {
+        map: todo!(),
+        edge_track: todo!(),
+        civitates_available: todo!(),
+        civitates_not_yet_in_play: todo!(),
+        dux_available: todo!(),
+        dux_casualties: todo!(),
+        dux_out_of_play: todo!(),
+        saxon_available: todo!(),
+        scotti_available: todo!(),
+        scotti_niall_noigiallach: todo!(),
+        imperium: todo!(),
+        roads_maintained: todo!(),
+    }
+}
+
+pub fn setup_the_harder_they_fall() -> Board<'static> {
+    Board {
+        map: todo!(),
+        edge_track: todo!(),
+        civitates_available: todo!(),
+        civitates_not_yet_in_play: todo!(),
+        dux_available: todo!(),
+        dux_casualties: todo!(),
+        dux_out_of_play: todo!(),
+        saxon_available: todo!(),
+        scotti_available: todo!(),
+        scotti_niall_noigiallach: todo!(),
+        imperium: todo!(),
+        roads_maintained: todo!(),
+    }
+}
+
+pub fn setup_de_excidio_britanniae() -> Board<'static> {
+    Board {
+        map: todo!(),
+        edge_track: todo!(),
+        civitates_available: todo!(),
+        civitates_not_yet_in_play: todo!(),
+        dux_available: todo!(),
+        dux_casualties: todo!(),
+        dux_out_of_play: todo!(),
+        saxon_available: todo!(),
+        scotti_available: todo!(),
+        scotti_niall_noigiallach: todo!(),
+        imperium: todo!(),
+        roads_maintained: todo!(),
+    }
+}
+
+pub fn setup_test_map() -> Board<'static> {
+    Board {
+        map: build_map(),
+        edge_track: todo!(),
+        civitates_available: CivitatesAvailable{comitates: 0, militia: 11, towns: 12, hillforts: 9, refugees: 0},
+        civitates_not_yet_in_play: (),
+        dux_available: (),
+        dux_casualties: (),
+        dux_out_of_play: (),
+        saxon_available: (),
+        scotti_available: (),
+        scotti_niall_noigiallach: (),
+        imperium: (),
+        roads_maintained: (),
+    }
 }

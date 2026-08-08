@@ -1,12 +1,13 @@
 use colored::Colorize;
 use std::fmt;
+use serde::{Serialize, Deserialize};
 
 use crate::concepts::{
     Nationality::Briton,
     Player::Civitates,
     UnitClass::{Comitates, Militia},
 };
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Player {
     Civitates,
     Dux,
@@ -45,14 +46,14 @@ struct PieceCount {
 }
 
 // Components
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Nationality {
     Briton,
     Saxon,
     Scotti,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Stronghold {
     pub controller: Player,
     pub class: StrongholdClass,
@@ -105,7 +106,7 @@ impl Stronghold {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum StrongholdClass {
     Fort,
     Hillfort,
@@ -113,7 +114,7 @@ pub enum StrongholdClass {
     Settlement,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Unit {
     pub designation: UnitClass,
     pub controller: Player,
@@ -121,7 +122,7 @@ pub struct Unit {
     pub plunder: bool,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum UnitClass {
     Cavalry,
     Comitates,

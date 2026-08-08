@@ -118,6 +118,7 @@ mod tests {
             space_type: SpaceType::Region,
             terrain: Some(Terrain::Clear),
             adj_spaces: vec![],
+            adj_road: vec![],
             adj_seas: vec![],
             pop: 2,
             max_pop: 3,

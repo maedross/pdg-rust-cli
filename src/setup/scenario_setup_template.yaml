@@ -1,0 +1,71 @@
+# Possible to make prosperity either a value or a list?
+Resources/Renown:
+- Briton:
+- Dux: 
+- Saxon:
+- Scotti:
+Markers:
+- Prestige:
+- Dux Control:
+- Red Victory Pawn:
+- Wealth:
+- Briton Control:
+- Blue Victory Pawn:
+- Saxon Control:
+- Imperium:
+- Roads:
+- Refugees:
+Spaces:
+- Atrebates:
+  - id: 
+  - Control:
+  - Prosperity:
+    - Top: 
+    - Bottom:
+  - Stronghold Sites:
+    - Venta Belgarum:
+      - Fort:
+      - Town:
+      - Hillfort:
+      - Saxon Settlement:
+      - Scotti Settlement:
+    - Calleva Atrebatum:
+      - Fort:
+      - Town:
+      - Hillfort:
+      - Saxon Settlement:
+      - Scotti Settlement:
+  - Units:
+    - Comitates:
+      - Without Plunder:
+      - With Plunder:
+    - Militia:
+      - Without Plunder:
+      - With Plunder:
+    - Blue Saxon Foederati:
+      - Without Plunder:
+      - With Plunder:
+    - Blue Scotti Foederati:
+      - Without Plunder:
+      - With Plunder:
+    - Cavalry: 
+      - Without Plunder:
+      - With Plunder:
+    - Red Saxon Foederati:
+      - Without Plunder:
+      - With Plunder:
+    - Red Scotti Foederati:
+      - Without Plunder:
+      - With Plunder:
+    - Saxon Raiders:
+      - Without Plunder:
+      - With Plunder:
+    - Saxon Warbands:
+      - Without Plunder:
+      - With Plunder:
+    - Scotti Raiders:
+      - Without Plunder:
+      - With Plunder:
+    - Scotti Warbands:
+      - Without Plunder:
+      - With Plunder:
