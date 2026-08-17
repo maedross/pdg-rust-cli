@@ -1,20 +1,19 @@
 use events::Event;
 use sequence_of_play::{SequenceOfPlay, SequenceOfPlayState};
-use std::{collections::VecDeque, println};
+use serde::{Deserialize, Serialize};
+use serde_yaml::{Result, Value};
+use std::fs::File;
 use std::io::BufReader;
 use std::io::prelude::*;
-use std::fs::File;
-use serde_yaml::{Result, Value};
-use serde::{Serialize, Deserialize};
+use std::{collections::VecDeque, println, env};
 
-use crate::board::build_map_from_yaml;
+use crate::board::{build_map_from_yaml, build_scenario_from_yaml};
 mod concepts;
 mod events;
 mod sequence_of_play;
 //mod setup;
 //mod commands;
 mod board;
-
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 enum Enum {
@@ -25,8 +24,10 @@ enum Enum {
 }
 
 fn main() {
-    build_map_from_yaml("C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml");
-   
+    build_scenario_from_yaml(
+        "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml",
+        "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml",
+    );
 }
 /*
 fn main() {

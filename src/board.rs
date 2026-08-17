@@ -1,3 +1,8 @@
+use crate::{board::{
+    Dominance::{Civilian, Military},
+    Imperium::{Autonomy, Fragmentation, RomanRule},
+}, concepts::{Nationality, StrongholdClass, UnitClass}};
+
 use super::concepts::{Player, Stronghold, Unit};
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self, Value};
@@ -123,9 +128,9 @@ impl Board {
 }
 
 pub struct Map {
-    land: HashMap<u8, Space>,
-    off_map_land: HashMap<u8, OffMapLandSpace>,
-    seas: HashMap<u8, Sea>,
+    land: HashMap<String, Space>,
+    off_map_land: HashMap<String, OffMapLandSpace>,
+    seas: HashMap<String, Sea>,
 }
 
 impl Map {
@@ -165,12 +170,12 @@ impl FromStr for Terrain {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Space {
-    pub id: u8,
+    pub id: String,
     pub name: String,
     pub space_type: SpaceType,
     pub terrain: Option<Terrain>,
-    pub adj_spaces: Vec<u8>,
-    pub adj_road: Vec<u8>,
+    pub adj_spaces: Vec<String>,
+    pub adj_road: Vec<String>,
     pub pop: u8,
     #[serde(default)]
     pub max_pop: u8,
@@ -178,7 +183,7 @@ pub struct Space {
     pub top_prosp: u8,
     #[serde(default)]
     pub bottom_prosp: u8,
-    pub stronghold_sites: Vec<StrongholdSite>,
+    pub stronghold_sites: HashMap<String, StrongholdSite>,
     #[serde(default)]
     pub units: Vec<Unit>,
     #[serde(default)]
@@ -187,17 +192,17 @@ pub struct Space {
 
 impl<'a> Space {
     fn new(
-        id: u8,
+        id: &str,
         name: &str,
         space_type: SpaceType,
         terrain: Option<Terrain>,
-        adj_spaces: Vec<u8>,
-        adj_road: Vec<u8>,
+        adj_spaces: Vec<String>,
+        adj_road: Vec<String>,
         pop: u8,
-        stronghold_sites: Vec<StrongholdSite>,
+        stronghold_sites: HashMap<String, StrongholdSite>,
     ) -> Space {
         Space {
-            id,
+            id: id.to_string(),
             name: name.to_string(),
             space_type,
             terrain,
@@ -214,7 +219,7 @@ impl<'a> Space {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum SpaceType {
     Region,
     City,
@@ -271,16 +276,16 @@ impl<'a> StrongholdSite {
 
 #[derive(Clone, Debug)]
 pub struct OffMapLandSpace {
-    id: u8,
+    id: String,
     name: String,
     patrol_spaces: Vec<u8>,
     adj: Vec<u8>,
 }
 
 impl OffMapLandSpace {
-    fn new(id: u8, name: &str) -> OffMapLandSpace {
+    fn new(id: &str, name: &str) -> OffMapLandSpace {
         OffMapLandSpace {
-            id,
+            id: id.to_string(),
             name: name.to_string(),
             patrol_spaces: vec![],
             adj: vec![],
@@ -290,16 +295,16 @@ impl OffMapLandSpace {
 
 #[derive(Clone, Debug)]
 pub struct Sea {
-    id: u8,
+    id: String,
     name: String,
     patrol: bool,
     adj: Vec<u8>,
 }
 
 impl Sea {
-    fn new(id: u8, name: &str) -> Sea {
+    fn new(id: &str, name: &str) -> Sea {
         Sea {
-            id,
+            id: id.to_string(),
             name: name.to_string(),
             patrol: false,
             adj: vec![],
@@ -380,7 +385,7 @@ pub enum Dominance {
     None,
 }
 
-pub fn build_map_from_yaml(file_path: &str) {
+pub fn build_map_from_yaml(file_path: &str) -> Map {
     let contents = fs::read_to_string(file_path).unwrap();
     let values: Vec<Value> = serde_yaml::from_str(&contents).unwrap();
     let mut game_map: Map = Map::new();
@@ -389,54 +394,326 @@ pub fn build_map_from_yaml(file_path: &str) {
         let space_type: &str = space["space_type"].as_str().unwrap();
         match space_type {
             "Region" => {
-                let id: u8 = space["id"].as_u64().unwrap() as u8;
+                let id: &str = space["id"].as_str().unwrap();
                 let name: &str = space["name"].as_str().unwrap();
                 let space_type: SpaceType = SpaceType::Region;
-                let terrain: Option<Terrain> = Some(Terrain::from_str(space["Terrain"].as_str().unwrap()).unwrap());
+                let terrain: Option<Terrain> =
+                    Some(Terrain::from_str(space["Terrain"].as_str().unwrap()).unwrap());
                 let pop: u8 = space["pop"].as_u64().unwrap() as u8;
-                let mut stronghold_sites: Vec<StrongholdSite> = vec![];
+                let mut stronghold_sites: HashMap<String, StrongholdSite> = HashMap::new();
                 for s in space["stronghold_sites"].as_sequence().unwrap() {
                     let name: &str = s["name"].as_str().unwrap();
-                    let site_type: StrongholdSiteType = StrongholdSiteType::from_str(s["site_type"].as_str().unwrap()).unwrap();
+                    let site_type: StrongholdSiteType =
+                        StrongholdSiteType::from_str(s["site_type"].as_str().unwrap()).unwrap();
                     let site: StrongholdSite = StrongholdSite::new(name, site_type);
-                    stronghold_sites.push(site);
+                    stronghold_sites.insert(name.to_string(), site);
                 }
-                let adj_spaces: Vec<u8> = space["adj_spaces"].as_sequence().unwrap().into_iter().map(|i| i.as_u64().unwrap() as u8).collect();
-                let adj_road: Vec<u8> = space["adj_road"].as_sequence().unwrap().into_iter().map(|i| i.as_u64().unwrap() as u8).collect();
-                let space: Space = Space::new(id, name, space_type, terrain, adj_spaces, adj_road, pop, stronghold_sites);
-                game_map.land.insert(id, space);
+                let adj_spaces: Vec<String> = space["adj_spaces"]
+                    .as_sequence()
+                    .unwrap()
+                    .into_iter()
+                    .map(|i| i.as_str().unwrap().to_string())
+                    .collect();
+                let adj_road: Vec<String> = space["adj_road"]
+                    .as_sequence()
+                    .unwrap()
+                    .into_iter()
+                    .map(|i| i.as_str().unwrap().to_string())
+                    .collect();
+                let space: Space = Space::new(
+                    id,
+                    name,
+                    space_type,
+                    terrain,
+                    adj_spaces,
+                    adj_road,
+                    pop,
+                    stronghold_sites,
+                );
+                game_map.land.insert(id.to_string(), space);
             }
             "City" => {
-                let id: u8 = space["id"].as_u64().unwrap() as u8;
+                let id: &str = space["id"].as_str().unwrap();
                 let name: &str = space["name"].as_str().unwrap();
-                let space_type: SpaceType = SpaceType::Region;
+                let space_type: SpaceType = SpaceType::City;
                 let terrain: Option<Terrain> = None;
                 let pop: u8 = space["pop"].as_u64().unwrap() as u8;
-                let mut stronghold_sites: Vec<StrongholdSite> = vec![];
+                let mut stronghold_sites: HashMap<String, StrongholdSite> = HashMap::new();
                 for s in space["stronghold_sites"].as_sequence().unwrap() {
                     let name: &str = s["name"].as_str().unwrap();
-                    let site_type: StrongholdSiteType = StrongholdSiteType::from_str(s["site_type"].as_str().unwrap()).unwrap();
+                    let site_type: StrongholdSiteType =
+                        StrongholdSiteType::from_str(s["site_type"].as_str().unwrap()).unwrap();
                     let site: StrongholdSite = StrongholdSite::new(name, site_type);
-                    stronghold_sites.push(site);
+                    stronghold_sites.insert(name.to_string(), site);
                 }
-                let adj_spaces: Vec<u8> = space["adj_spaces"].as_sequence().unwrap().into_iter().map(|i| i.as_u64().unwrap() as u8).collect();
-                let adj_road: Vec<u8> = space["adj_road"].as_sequence().unwrap().into_iter().map(|i| i.as_u64().unwrap() as u8).collect();
-                let space: Space = Space::new(id, name, space_type, terrain, adj_spaces, adj_road, pop, stronghold_sites);
-                game_map.land.insert(id, space);
+                let adj_spaces: Vec<String> = space["adj_spaces"]
+                    .as_sequence()
+                    .unwrap()
+                    .into_iter()
+                    .map(|i| i.as_str().unwrap().to_string())
+                    .collect();
+                let adj_road: Vec<String> = space["adj_road"]
+                    .as_sequence()
+                    .unwrap()
+                    .into_iter()
+                    .map(|i| i.as_str().unwrap().to_string())
+                    .collect();
+                let space: Space = Space::new(
+                    id,
+                    name,
+                    space_type,
+                    terrain,
+                    adj_spaces,
+                    adj_road,
+                    pop,
+                    stronghold_sites,
+                );
+                game_map.land.insert(id.to_string(), space);
             }
             "Sea" => {
-                let id: u8 = space["id"].as_u64().unwrap() as u8;
+                let id: &str = space["id"].as_str().unwrap();
                 let name: &str = space["name"].as_str().unwrap();
                 let sea: Sea = Sea::new(id, name);
-                game_map.seas.insert(id, sea);
+                game_map.seas.insert(id.to_string(), sea);
             }
             "Off map land" => {
-                let id: u8 = space["id"].as_u64().unwrap() as u8;
+                let id: &str = space["id"].as_str().unwrap();
                 let name: &str = space["name"].as_str().unwrap();
                 let off_map_land = OffMapLandSpace::new(id, name);
-                game_map.off_map_land.insert(id, off_map_land);
+                game_map.off_map_land.insert(id.to_string(), off_map_land);
             }
             _ => panic!("Invalid space type: {}", space_type),
         }
     }
+    return game_map;
+}
+
+pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -> Board {
+    let mut game_map: Map = build_map_from_yaml(map_file_path);
+    let contents: String = fs::read_to_string(scenario_file_path).unwrap();
+    let values: Value = serde_yaml::from_str(&contents).unwrap();
+
+    let res: &serde_yaml::Mapping = values["Resources/Renown"].as_mapping().unwrap();
+    let markers: &serde_yaml::Mapping = values["Markers"].as_mapping().unwrap();
+    let spaces: &serde_yaml::Mapping = values["Spaces"].as_mapping().unwrap();
+    let holding_boxes: &serde_yaml::Mapping = values["Holding Boxes"].as_mapping().unwrap();
+
+    //Resources
+    let briton_resources: u8 = res["Briton"].as_u64().unwrap() as u8;
+    let dux_resources: u8 = res["Dux"].as_u64().unwrap() as u8;
+    let saxon_renown: u8 = res["Saxon"].as_u64().unwrap() as u8;
+    let scotti_renown: u8 = res["Scotti"].as_u64().unwrap() as u8;
+
+    //Markers
+    let wealth: u8 = markers["Wealth"].as_u64().unwrap() as u8;
+    let prestige: u8 = markers["Prestige"].as_u64().unwrap() as u8;
+    let roads_maintained: bool = markers["Roads"].as_bool().unwrap();
+
+    let imperium_dominance: Option<&str> =
+        markers["Imperium"].as_mapping().unwrap()["Dominance"].as_str();
+    let imperium: Imperium = match markers["Imperium"].as_mapping().unwrap()["Level"]
+        .as_str()
+        .unwrap()
+    {
+        "Roman Rule" => match imperium_dominance {
+            Some(s) => match s {
+                "Military" => RomanRule(Military),
+                "Civilian" => RomanRule(Civilian),
+                _ => panic!("Invalid dominance"),
+            },
+            None => panic!("Require Dominance at Roman Rule!"),
+        },
+        "Autonomy" => match imperium_dominance {
+            Some(s) => match s {
+                "Military" => Autonomy(Military),
+                "Civilian" => Autonomy(Civilian),
+                _ => panic!("Invalid dominance"),
+            },
+            None => panic!("Require Dominance at Autonomy!"),
+        },
+        "Fragmentation" => Fragmentation,
+        _ => panic!("Invalid imperium level!"),
+    };
+
+    //Spaces
+    println!("Spaces are {:?}", spaces);
+    for space_key in spaces.clone().into_keys() {
+        let space_id: &str = space_key.as_str().unwrap();
+        let space: &Value = spaces.get(space_id).unwrap();
+        println!("Space is {:?}", space);
+        let space_mapping: &serde_yaml::Mapping = space.as_mapping().unwrap();
+        println!("Processing space {}", space_id);
+        let x: Option<&mut Space> = game_map.land.get_mut(space_id);
+        match x {
+            Some(land) => {
+                match space_mapping["Control"].as_str().unwrap() {
+                    "Briton" => land.control = Some(Player::Civitates),
+                    "Dux" => land.control = Some(Player::Dux),
+                    "Saxon" => land.control = Some(Player::Saxons),
+                    "Scotti" => land.control = Some(Player::Scotti),
+                    "None" => land.control = None,
+                    _ => panic!("Invalid control for {}", space_id),
+                }
+
+                //TODO: Handle altered population
+
+                if land.space_type == SpaceType::Region {
+                    println!("{} has space type {:?}", space_id, land.space_type);
+                    land.top_prosp = space_mapping["Prosperity"].as_mapping().unwrap()["Top"]
+                        .as_u64()
+                        .unwrap() as u8;
+                    land.bottom_prosp = space_mapping["Prosperity"].as_mapping().unwrap()["Bottom"]
+                        .as_u64()
+                        .unwrap() as u8;
+                } else if land.space_type == SpaceType::City {
+                    land.bottom_prosp = space_mapping["Prosperity"].as_u64().unwrap() as u8;
+                }
+
+                println!("Stronghold sites are {:?}", space["Stronghold Sites"].as_mapping().unwrap());
+                for (site_name, site_piece) in space["Stronghold Sites"].as_mapping().unwrap().iter() {
+                    let site_name = site_name.as_str().unwrap();
+                    let site_piece = site_piece.as_mapping().unwrap();
+                    let site: &mut StrongholdSite = land.stronghold_sites.get_mut(site_name).unwrap();
+                    site.stronghold = match site_piece["Type"].as_str().unwrap() {
+                        "Fort" => Some(Stronghold::new(StrongholdClass::Fort, Some(Player::Dux), None)),
+                        "Hillfort" => Some(Stronghold::new(StrongholdClass::Hillfort, Some(Player::Civitates), Some(Nationality::Briton))),
+                        "Town" => Some(Stronghold::new(StrongholdClass::Town, Some(Player::Civitates), Some(Nationality::Briton))),
+                        "Saxon Settlement" => Some(Stronghold::new(StrongholdClass::Settlement, Some(Player::Saxons), Some(Nationality::Saxon))),
+                        "Scotti Settlement" => Some(Stronghold::new(StrongholdClass::Settlement, Some(Player::Scotti), Some(Nationality::Scotti))),
+                        _ => panic!("Invalid stronghold type {}", site_name),
+                    }
+                }
+
+                let unit_list: &serde_yaml::Mapping = space["Units"].as_mapping().unwrap();
+                println!("Units are {:?}", unit_list);
+                for unit in unit_list.keys() {
+                    let unit: &str = unit.as_str().unwrap();
+                    println!("Examining {}", unit);
+                    match unit {
+                        "Cavalry" => {
+                            let designation: UnitClass = UnitClass::Cavalry;
+                            let controller: Player = Player::Dux;
+                            let nationality: Nationality = Nationality::Briton;
+                            let plunder: bool = unit_list.contains_key("Without Plunder");
+                            let amt = unit_list["Cavalry"].as_mapping().unwrap()["Without Plunder"].as_u64().unwrap();
+                            println!("{:?} plunderless Cavalry", amt);
+                            for _ in 0..amt {
+                                land.units.push(Unit { designation, controller, nationality, plunder });
+                            }
+                        },
+                        "Militia" => {
+                            let militia: &serde_yaml::Mapping = unit_list["Militia"].as_mapping().unwrap();
+                            let designation: UnitClass = UnitClass::Militia;
+                            let controller: Player = Player::Civitates;
+                            let nationality: Nationality = Nationality::Briton;
+                            let plunder: bool = unit_list.contains_key("Without Plunder");
+                            let amt = militia["Without Plunder"].as_u64().unwrap();
+                            println!("{:?} plunderless Militia", amt);
+                            for _ in 0..amt {
+                                land.units.push(Unit { designation, controller, nationality, plunder });
+                            }
+                        },
+                        _ => panic!("Invalid unit type {}", unit),
+                    }
+                }
+            }
+            None => {
+                let y: Option<&mut Sea> = game_map.seas.get_mut(space_id);
+                match y {
+                    Some(sea) => {
+                        let patrol = space_mapping["Patrolled"].as_bool().unwrap();
+                        sea.patrol = patrol;
+                        println!("Set patrol status for {} to {}", sea.name, patrol);
+                    },
+                    None => panic!("Unrecognized space ID {}", space_id),
+                }
+            }
+        }
+    }
+
+    //Holding Boxes
+    let civitates_available_mapping: &serde_yaml::Mapping =
+        holding_boxes["Civitates"].as_mapping().unwrap()["Available"]
+            .as_mapping()
+            .unwrap();
+    let dux_available_mapping: &serde_yaml::Mapping =
+        holding_boxes["Dux"].as_mapping().unwrap()["Available"]
+            .as_mapping()
+            .unwrap();
+    let saxon_available_mapping: &serde_yaml::Mapping =
+        holding_boxes["Saxons"].as_mapping().unwrap()["Available"]
+            .as_mapping()
+            .unwrap();
+    let scotti_available_mapping: &serde_yaml::Mapping =
+        holding_boxes["Scotti"].as_mapping().unwrap()["Available"]
+            .as_mapping()
+            .unwrap();
+
+    let civitates_available: CivitatesAvailable = CivitatesAvailable {
+        militia: civitates_available_mapping["Militia"].as_u64().unwrap() as u8,
+        comitates: civitates_available_mapping
+            .get("Comitates")
+            .map_or(0, |v| v.as_u64().unwrap() as u8),
+        towns: civitates_available_mapping["Towns"].as_u64().unwrap() as u8,
+        hillforts: civitates_available_mapping["Hillforts"].as_u64().unwrap() as u8,
+        refugees: markers["Refugees"].as_u64().unwrap() as u8,
+    };
+    let civitates_not_yet_in_play: CivitatesNotYetInPlay = CivitatesNotYetInPlay {
+        comitates: holding_boxes["Civitates"].as_mapping().unwrap()["Not yet in play"]
+            .as_u64()
+            .unwrap() as u8,
+    };
+    let dux_out_of_play: DuxOutOfPlay = DuxOutOfPlay {
+        cavalry: holding_boxes["Dux"].as_mapping().unwrap()["Out of play"]
+            .as_u64()
+            .unwrap() as u8,
+    };
+    let dux_casualties: DuxCasualties = DuxCasualties {
+        cavalry: holding_boxes["Dux"].as_mapping().unwrap()["Casualties"]
+            .as_u64()
+            .unwrap() as u8,
+    };
+    let scotti_niall_noigiallach: ScottiNiallNoigiallach = ScottiNiallNoigiallach {
+        raiders: holding_boxes["Scotti"].as_mapping().unwrap()["Niall Noigiallach"]
+            .as_u64()
+            .unwrap() as u8,
+    };
+
+    let dux_available: DuxAvailable = DuxAvailable {
+        cavalry: dux_available_mapping["Cavalry"].as_u64().unwrap() as u8,
+        forts: dux_available_mapping["Forts"].as_u64().unwrap() as u8,
+    };
+    let saxons_available: SaxonsAvailable = SaxonsAvailable {
+        raiders: saxon_available_mapping["Raiders"].as_u64().unwrap() as u8,
+        warbands: saxon_available_mapping["Warbands"].as_u64().unwrap() as u8,
+        settlements: saxon_available_mapping["Settlements"].as_u64().unwrap() as u8,
+        max_settlements: 12,
+    };
+    let scotti_available: ScottiAvailable = ScottiAvailable {
+        raiders: scotti_available_mapping["Raiders"].as_u64().unwrap() as u8,
+        warbands: scotti_available_mapping["Warbands"].as_u64().unwrap() as u8,
+        settlements: scotti_available_mapping["Settlements"].as_u64().unwrap() as u8,
+        max_settlements: 6,
+    };
+
+    let game_board = Board::new(
+        game_map,
+        imperium,
+        briton_resources,
+        wealth,
+        dux_resources,
+        prestige,
+        saxon_renown,
+        scotti_renown,
+        civitates_available,
+        civitates_not_yet_in_play,
+        dux_available,
+        dux_casualties,
+        dux_out_of_play,
+        saxons_available,
+        scotti_available,
+        scotti_niall_noigiallach,
+        roads_maintained,
+    );
+    return game_board;
 }

@@ -46,7 +46,7 @@ struct PieceCount {
 }
 
 // Components
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum Nationality {
     Briton,
     Saxon,
@@ -122,7 +122,7 @@ pub struct Unit {
     pub plunder: bool,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum UnitClass {
     Cavalry,
     Comitates,

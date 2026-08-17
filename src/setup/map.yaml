@@ -1,4 +1,4 @@
-- id: 0
+- id: Atrebates
   name: Atrebates
   space_type: Region
   Terrain: Clear
@@ -8,9 +8,9 @@
     site_type: Town
   - name: Calleva Atrebatum
     site_type: Town
-  adj_spaces: [2, 4, 9, 11, 14, 18, 23]
-  adj_road: [11, 14]
-- id: 1
+  adj_spaces: [Cantiaci, Catuvellauni, Dobunni, Durotriges, Londinium, Regni, Oceanus Britannicus]
+  adj_road: [Durotriges, Londinium]
+- id: Brigantes
   name: Brigantes
   space_type: Region
   Terrain: Hills
@@ -20,9 +20,9 @@
     site_type: Hillfort
   - name: Mam Tor
     site_type: Hillfort
-  adj_spaces: [3, 5, 6, 7, 12, 17, 20]
+  adj_spaces: [Carvetii, Corieltauvi, Cornovii, Decangli, Eboracum, Parisi, Textoverdi]
   adj_road: []
-- id: 2
+- id: Cantiaci
   name: Cantiaci
   space_type: Region
   Terrain: Fens
@@ -32,9 +32,9 @@
     site_type: Hillfort
   - name: Durovernum
     site_type: Town
-  adj_spaces: [14, 18, 0, 23, 24]
-  adj_road: [14]
-- id: 3
+  adj_spaces: [Londinium, Regni, Atrebates, Oceanus Britannicus, Oceanus Germanicus]
+  adj_road: [Londinium]
+- id: Carvetii
   name: Carvetii
   space_type: Region
   Terrain: Hills
@@ -44,9 +44,9 @@
     site_type: Hillfort
   - name: Luguvalium
     site_type: Town
-  adj_spaces: [15, 22, 20, 1, 7, 25]
-  adj_road: [20]
-- id: 4
+  adj_spaces: [Novantae, Votadini, Textoverdi, Brigantes, Decangli, Oceanus Hibernicus]
+  adj_road: [Textoverdi]
+- id: Catuvellauni
   name: Catuvellauni
   space_type: Region
   Terrain: Clear
@@ -56,9 +56,9 @@
     site_type: Town
   - name: Verulamium
     site_type: Town
-  adj_spaces: [5, 13, 21, 14, 0, 9]
-  adj_road: [5, 14, 9]
-- id: 5
+  adj_spaces: [Corieltauvi, Iceni, Trinovantes, Londinium, Atrebates, Dobunni]
+  adj_road: [Corieltauvi, Londinium, Dobunni]
+- id: Corieltauvi
   name: Corieltauvi
   space_type: Region
   Terrain: Fens
@@ -68,9 +68,9 @@
     site_type: Town
   - name: Lindum
     site_type: Town
-  adj_spaces: [17, 13, 4, 9, 6, 1, 24]
-  adj_road: [17, 4, 9]
-- id: 6
+  adj_spaces: [Parisi, Iceni, Catuvellauni, Dobunni, Cornovii, Brigantes, Oceanus Germanicus]
+  adj_road: [Parisi, Catuvellauni, Dobunni]
+- id: Cornovii
   name: Cornovii
   space_type: Region
   Terrain: Clear
@@ -80,9 +80,9 @@
     site_type: Hillfort
   - name: Viroconium
     site_type: Town
-  adj_spaces: [7, 1, 5, 9, 19, 8, 16]
-  adj_road: [7, 9]
-- id: 7
+  adj_spaces: [Decangli, Brigantes, Corieltauvi, Dobunni, Silures, Demetae, Ordovices]
+  adj_road: [Decangli, Dobunni]
+- id: Decangli
   name: Decangli
   space_type: Region
   Terrain: Clear
@@ -92,9 +92,9 @@
     site_type: Hillfort
   - name: Deva
     site_type: Town
-  adj_spaces: [3, 1, 6, 16, 25]
-  adj_road: [6]
-- id: 8
+  adj_spaces: [Carvetii, Brigantes, Cornovii, Ordovices, Oceanus Hibernicus]
+  adj_road: [Cornovii]
+- id: Demetae
   name: Demetae
   space_type: Region
   Terrain: Hills
@@ -104,9 +104,9 @@
     site_type: Hillfort
   - name: Gateholm
     site_type: Hillfort
-  adj_spaces: [16, 6, 19, 25]
+  adj_spaces: [Ordovices, Cornovii, Silures, Oceanus Hibernicus]
   adj_road: []
-- id: 9
+- id: Dobunni
   name: Dobunni
   space_type: Region
   Terrain: Clear
@@ -116,9 +116,9 @@
     site_type: Town
   - name: Corinium
     site_type: Town
-  adj_spaces: [19, 6, 5, 4, 0, 11]
-  adj_road: [19, 6, 5, 4, 11]
-- id: 10
+  adj_spaces: [Silures, Cornovii, Corieltauvi, Catuvellauni, Atrebates, Durotriges]
+  adj_road: [Silures, Cornovii, Corieltauvi, Catuvellauni, Durotriges]
+- id: Dumnonii
   name: Dumnonii
   space_type: Region
   Terrain: Hills
@@ -128,9 +128,9 @@
     site_type: Hillfort
   - name: Isca Dumnoniorum
     site_type: Town
-  adj_spaces: [11, 23, 25]
+  adj_spaces: [Durotriges, Oceanus Britannicus, Oceanus Hibernicus]
   adj_road: []
-- id: 11
+- id: Durotriges
   name: Durotriges
   space_type: Region
   Terrain: Clear
@@ -140,18 +140,18 @@
     site_type: Hillfort
   - name: Aquae Sulis
     site_type: Town
-  adj_spaces: [9, 0, 10, 23, 25]
-  adj_road: [9, 0]
-- id: 12
+  adj_spaces: [Dobunni, Atrebates, Dumnonii, Oceanus Britannicus, Oceanus Hibernicus]
+  adj_road: [Dobunni, Atrebates]
+- id: Eboracum
   name: Eboracum
   space_type: City
   pop: 1
   stronghold_sites:
   - name: Eboracum
     site_type: Town
-  adj_spaces: [20, 17, 1]
-  adj_road: [20, 17]
-- id: 13
+  adj_spaces: [Textoverdi, Parisi, Brigantes]
+  adj_road: [Textoverdi, Parisi]
+- id: Iceni
   name: Iceni
   space_type: Region
   Terrain: Fens
@@ -161,18 +161,18 @@
     site_type: Hillfort
   - name: Venta Icenorum
     site_type: Hillfort
-  adj_spaces: [5, 21, 4, 24]
+  adj_spaces: [Corieltauvi, Trinovantes, Catuvellauni, Oceanus Germanicus]
   adj_road: []
-- id: 14
+- id: Londinium
   name: Londinium
   space_type: City
   pop: 2
   stronghold_sites:
   - name: Londinium
     site_type: Town
-  adj_spaces: [4, 21, 2, 0, 24]
-  adj_road: [4, 21, 2, 0]
-- id: 15
+  adj_spaces: [Catuvellauni, Trinovantes, Cantiaci, Atrebates, Oceanus Germanicus]
+  adj_road: [Catuvellauni, Trinovantes, Cantiaci, Atrebates]
+- id: Novantae
   name: Novantae
   space_type: Region
   Terrain: Hills
@@ -182,9 +182,9 @@
     site_type: Hillfort
   - name: Alclud
     site_type: Hillfort
-  adj_spaces: [22, 3, 25, 27]
+  adj_spaces: [Votadini, Carvetii, Oceanus Hibernicus, Caledonia]
   adj_road: []
-- id: 16
+- id: Ordovices
   name: Ordovices
   space_type: Region
   Terrain: Hills
@@ -194,9 +194,9 @@
     site_type: Hillfort
   - name: Dinas Emrys
     site_type: Hillfort
-  adj_spaces: [7, 6, 8, 25]
+  adj_spaces: [Decangli, Cornovii, Demetae, Oceanus Hibernicus]
   adj_road: []
-- id: 17
+- id: Parisi
   name: Parisi
   space_type: Region
   Terrain: Clear
@@ -206,9 +206,9 @@
     site_type: Hillfort
   - name: Derventio
     site_type: Hillfort
-  adj_spaces: [20, 12, 5, 1, 24, 26]
-  adj_road: [12, 5]
-- id: 18
+  adj_spaces: [Textoverdi, Eboracum, Corieltauvi, Brigantes, Oceanus Germanicus, Oceanus Septentrionalis]
+  adj_road: [Eboracum, Corieltauvi]
+- id: Regni
   name: Regni
   space_type: Region
   Terrain: Clear
@@ -218,9 +218,9 @@
     site_type: Hillfort
   - name: Noviomagus
     site_type: Town
-  adj_spaces: [0, 2, 23]
+  adj_spaces: [Atrebates, Cantiaci, Oceanus Britannicus]
   adj_road: []
-- id: 19
+- id: Silures
   name: Silures
   space_type: Region
   Terrain: Hills
@@ -230,9 +230,9 @@
     site_type: Hillfort
   - name: Isca Silurum
     site_type: Town
-  adj_spaces: [8, 6, 9, 25]
-  adj_road: [9]
-- id: 20
+  adj_spaces: [Demetae, Cornovii, Dobunni, Oceanus Hibernicus]
+  adj_road: [Dobunni]
+- id: Textoverdi
   name: Textoverdi
   space_type: Region
   Terrain: Hills
@@ -242,9 +242,9 @@
     site_type: Hillfort
   - name: Cataractonium
     site_type: Town
-  adj_spaces: [3, 22, 17, 12, 1, 26]
-  adj_road: [3, 12]
-- id: 21
+  adj_spaces: [Carvetii, Votadini, Parisi, Eboracum, Brigantes, Oceanus Septentrionalis]
+  adj_road: [Carvetii, Eboracum]
+- id: Trinovantes
   name: Trinovantes
   space_type: Region
   Terrain: Fens
@@ -254,9 +254,9 @@
     site_type: Town
   - name: Walton Castle
     site_type: Hillfort
-  adj_spaces: [13, 14, 4, 24]
-  adj_road: [14]
-- id: 22
+  adj_spaces: [Iceni, Londinium, Catuvellauni, Oceanus Germanicus]
+  adj_road: [Londinium]
+- id: Votadini
   name: Votadini
   space_type: Region
   Terrain: Hills
@@ -266,25 +266,25 @@
     site_type: Hillfort
   - name: Taprain Law
     site_type: Hillfort
-  adj_spaces: [15, 3, 20, 26, 27]
+  adj_spaces: [Novantae, Carvetii, Textoverdi, Oceanus Septentrionalis, Caledonia]
   adj_road: []
-- id: 23
+- id: Oceanus Britannicus
   name: Oceanus Britannicus
   space_type: Sea
-  adj_spaces: [2, 18, 0, 11, 10]
-- id: 24
+  adj_spaces: [Cantiaci, Regni, Atrebates, Durotriges, Dumnonii]
+- id: Oceanus Germanicus
   name: Oceanus Germanicus
   space_type: Sea
-  adj_spaces: [17, 5, 13, 21, 14, 2]
-- id: 25
+  adj_spaces: [Parisi, Corieltauvi, Iceni, Trinovantes, Londinium, Cantiaci]
+- id: Oceanus Hibernicus
   name: Oceanus Hibernicus
   space_type: Sea
-  adj_spaces: [15, 3, 7, 16, 8, 19, 11, 10]
-- id: 26
+  adj_spaces: [Novantae, Carvetii, Decangli, Ordovices, Demetae, Silures, Durotriges, Dumnonii]
+- id: Oceanus Septentrionalis
   name: Oceanus Septentrionalis
   space_type: Sea
-  adj_spaces: [22, 20, 17]
-- id: 27
+  adj_spaces: [Votadini, Textoverdi, Parisi]
+- id: Caledonia
   name: Caledonia
   space_type: Off map land
-  adj_spaces: [15, 22]
+  adj_spaces: [Novantae, Votadini]

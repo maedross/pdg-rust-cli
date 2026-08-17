@@ -1,0 +1,326 @@
+Resources/Renown:
+  Briton: 25
+  Dux: 0
+  Saxon: 10
+  Scotti: 6
+Markers:
+  Prestige: 0
+  Dux Control: 0
+  Red Victory Pawn: 75
+  Wealth: 0
+  Briton Control: 40
+  Blue Victory Pawn: 36
+  Saxon Control: 0
+  Imperium:
+    Dominance: Military
+    Level: Roman Rule
+  Roads: True
+  Refugees: 0
+Spaces:
+  Atrebates:
+    Control: Briton
+    Prosperity:
+      Top: 3
+      Bottom: 3
+    Stronghold Sites:
+      Venta Belgarum:
+        Type: Fort
+      Calleva Atrebatum:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+      Cavalry: 
+        Without Plunder: 1
+  Brigantes:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Barwick:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 2
+  Cantiaci:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Rutupiae:
+        Type: Fort
+      Durovernum:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+      Cavalry: 
+        Without Plunder: 1
+  Carvetii:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Uxellodunum:
+        Type: Fort
+    Units:
+      Cavalry: 
+        Without Plunder: 3
+  Catuvellauni:
+    Control: Briton
+    Prosperity:
+      Top: 3
+      Bottom: 3
+    Stronghold Sites:
+      Verulamium:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+  Corieltauvi:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Ratae:
+        Type: Town
+      Lindum:
+        Type: Fort
+    Units:
+      Militia:
+        Without Plunder: 1
+      Cavalry: 
+        Without Plunder: 1
+  Cornovii:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Viroconium:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+  Decangli:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Deva:
+        Type: Fort
+    Units:
+      Cavalry: 
+        Without Plunder: 2
+  Demetae:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Moridunum:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 1
+  Dobunni:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Corinium:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 2
+  Dumnonii:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Isca Dumnoniorum:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+  Durotriges:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Aquae Sulis:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+  Eboracum:
+    Control: Briton
+    Prosperity: 2
+    Stronghold Sites:
+      Eboracum:
+        Type: Fort
+    Units:
+      Cavalry: 
+        Without Plunder: 5
+  Iceni:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Venta Icenorum:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 1
+  Londinium:
+    Control: Briton
+    Prosperity: 4
+    Stronghold Sites:
+      Londinium:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+  Novantae:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Mote of Mark:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 1
+  Ordovices:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Segontium:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 1
+  Parisi:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Petuaria:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 1
+  Regni:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Anderida:
+        Type: Fort
+      Noviomagus:
+        Type: Town
+    Units:
+      Militia:
+        Without Plunder: 1
+      Cavalry: 
+        Without Plunder: 1
+  Silures:
+    Control: Briton
+    Prosperity:
+      Top: 1
+      Bottom: 1
+    Stronghold Sites:
+      Dinas Powys:
+        Type: Fort
+      Isca Silurum:
+        Type: Town
+    Units:
+      Cavalry: 
+        Without Plunder: 2
+  Textoverdi:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Pons Aelius:
+        Type: Fort
+      Cataractonium:
+        Type: Town
+    Units:
+      Cavalry: 
+        Without Plunder: 3
+  Trinovantes:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Camolodunum:
+        Type: Town
+      Walton Castle :
+        Type: Fort
+    Units:
+      Militia:
+        Without Plunder: 1
+      Cavalry: 
+        Without Plunder: 1
+  Votadini:
+    Control: Briton
+    Prosperity:
+      Top: 2
+      Bottom: 2
+    Stronghold Sites:
+      Yeavering:
+        Type: Hillfort
+      Taprain Law:
+        Type: Hillfort
+    Units:
+      Militia:
+        Without Plunder: 4
+  Oceanus Britannicus:
+    Patrolled: True
+  Oceanus Germanicus:
+    Patrolled: True
+  Oceanus Hibernicus:
+    Patrolled: False
+  Oceanus Septentrionalis:
+    Patrolled: False
+Holding Boxes:
+  Civitates:
+    Not yet in play: 15
+    Available:
+      Militia: 6
+      Towns: 2
+      Hillforts: 7
+  Dux:
+    Out of play: 0
+    Casualties: 0
+    Available:
+      Cavalry: 0
+      Forts: 0
+  Saxons:
+    Available:
+      Raiders: 25
+      Settlements: 12
+      Warbands: 25
+  Scotti:
+    Niall Noigiallach: 0
+    Available:
+      Raiders: 30
+      Settlements: 6
+      Warbands: 12
