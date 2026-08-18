@@ -128,9 +128,9 @@ impl Board {
 }
 
 pub struct Map {
-    land: HashMap<String, Space>,
-    off_map_land: HashMap<String, OffMapLandSpace>,
-    seas: HashMap<String, Sea>,
+    pub land: HashMap<String, Space>,
+    pub off_map_land: HashMap<String, OffMapLandSpace>,
+    pub seas: HashMap<String, Sea>,
 }
 
 impl Map {
@@ -382,7 +382,6 @@ pub enum Imperium {
 pub enum Dominance {
     Military,
     Civilian,
-    None,
 }
 
 pub fn build_map_from_yaml(file_path: &str) -> Map {

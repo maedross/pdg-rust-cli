@@ -46,14 +46,14 @@ struct PieceCount {
 }
 
 // Components
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Nationality {
     Briton,
     Saxon,
     Scotti,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Stronghold {
     pub controller: Player,
     pub class: StrongholdClass,
@@ -106,7 +106,7 @@ impl Stronghold {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum StrongholdClass {
     Fort,
     Hillfort,
@@ -122,7 +122,7 @@ pub struct Unit {
     pub plunder: bool,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum UnitClass {
     Cavalry,
     Comitates,
@@ -159,25 +159,5 @@ impl Unit {
             ret.push(militia.clone());
         }
         return ret;
-    }
-}
-
-pub struct CivitatesHolding {
-    out_of_play_comitates: u8,
-    available_comitates: u8,
-    available_militia: u8,
-    available_hillforts: u8,
-    available_towns: u8,
-}
-
-impl CivitatesHolding {
-    pub fn blank() -> CivitatesHolding {
-        CivitatesHolding {
-            out_of_play_comitates: 15,
-            available_comitates: 0,
-            available_militia: 30,
-            available_hillforts: 15,
-            available_towns: 15,
-        }
     }
 }

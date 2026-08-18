@@ -2,6 +2,9 @@ use dialoguer::Select;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
+use crate::board::build_scenario_from_yaml;
+use crate::commands;
+
 use super::concepts::Player;
 use super::events::{Event, EventType};
 use Player::{Civitates, Dux, Saxons, Scotti};
@@ -278,6 +281,19 @@ impl SequenceOfPlay {
                         self.player_eligibilities.insert(
                             self.current_event.eligibility[self.current_player],
                             PlayerState::Passed,
+                        );
+                    }
+                    Action::CommandOnly => {
+                        println!(
+                            "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
+                        );
+                        commands::muster(&mut build_scenario_from_yaml(
+                            "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml",
+                            "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml",
+                        ));
+                        self.player_eligibilities.insert(
+                            self.current_event.eligibility[self.current_player],
+                            PlayerState::Acted,
                         );
                     }
                     _ => {

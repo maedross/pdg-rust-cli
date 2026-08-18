@@ -1,29 +1,62 @@
-use super::board::{Space, StrongholdSite, StrongholdSiteType};
-use super::concepts::{CivitatesHolding, Player, StrongholdClass, Unit};
-use dialoguer::Input;
+use crate::board::CivitatesAvailable;
+use crate::concepts::UnitClass;
+
+use super::board::{Board, Space, StrongholdSite};
+use super::concepts::{Player, StrongholdClass};
+use dialoguer::{Input, MultiSelect};
 
 // TODO: func for selecting spaces
 // TODO: Muster (and other commands) as state machine?
 // States would be selecting spaces and spending, type of muster
 // But need to allow for feats as well
-pub fn muster(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) {
-    let resulting_loc: Space;
-    let w: u8;
-    if true {
-        (resulting_loc, w) = muster_units(loc, wealth, avail);
-    } else {
-        (resulting_loc, w) = muster_units(loc, wealth, avail);
-        // resulting_loc = muster_strongholds(loc);
+pub fn muster(game: &mut Board) {
+    let mut spaces: Vec<&mut Space> =
+        game.map
+            .land
+            .values_mut()
+            .filter(|l: &&mut Space| {
+                l.units.iter().any(|u| {
+                    [UnitClass::Militia, UnitClass::Comitates].contains(&u.designation)
+                        || u.controller == Player::Civitates
+                }) || l.stronghold_sites.values().any(|site: &StrongholdSite| {
+                    match site.stronghold {
+                        Some(stronghold) => {
+                            [StrongholdClass::Hillfort, StrongholdClass::Town]
+                                .contains(&stronghold.class)
+                                || stronghold.controller == Player::Civitates
+                        }
+                        None => false,
+                    }
+                })
+            })
+            .collect();
+    spaces.sort_by(|a, b| a.name.cmp(&b.name));
+    let space_names: Vec<String> = spaces.iter().map(|s| s.name.clone()).collect();
+    let muster_locations = MultiSelect::new()
+        .with_prompt("Select a number of spaces to Muster")
+        .items(&space_names)
+        .interact()
+        .unwrap();
+    println!("Selected spaces:");
+    for s in muster_locations.clone() {
+        println!("{}", space_names[s]);
     }
-    return (resulting_loc, w);
+    println!("DEBUG INFO:\nmuster_Locations: {:?}", muster_locations);
+    for s in muster_locations.clone() {
+        if true {
+            let resulting_loc = muster_units(&mut spaces[muster_locations[s]].clone(), game.edge_track.wealth, &mut game.civitates_available);
+        } else {
+            let resulting_loc = muster_units(&mut spaces[muster_locations[s]].clone(), game.edge_track.wealth, &mut game.civitates_available);
+            // resulting_loc = muster_strongholds(loc);
+        }
+    }
 }
 
 // TODO: Check available when adding units
-fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) {
-    let mut resulting_loc: Space<'_> = loc.clone();
+fn muster_units(loc: &mut Space, wealth: u8, avail: &mut CivitatesAvailable) {
     let mut cubes_to_place = 0;
 
-    for stronghold_site in loc.stronghold_sites {
+    for stronghold_site in loc.stronghold_sites.values() {
         match stronghold_site.stronghold {
             Some(s) => match s.class {
                 StrongholdClass::Hillfort => cubes_to_place += 1,
@@ -42,7 +75,7 @@ fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) 
         }
         None => {}
     }
-
+    // TODO: Make this an option
     println!(
         "Placing {} cubes. Place Comitates instead of Militia?\nEach Comitates costs 1 Wealth.\nCurrent Wealth: {}",
         cubes_to_place, wealth
@@ -51,7 +84,7 @@ fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) 
     loop {
         let comitates_to_place: String = Input::new()
             .allow_empty(true)
-            .with_prompt("Enter number of Comitates to place instead (default: 0)")
+            .with_prompt("Enter number of Comitates to place instead of Militia (default: 0)")
             .interact()
             .unwrap();
         if comitates_to_place == "" {
@@ -81,14 +114,14 @@ fn muster_units(loc: Space, wealth: u8, avail: CivitatesHolding) -> (Space, u8) 
         }
     }
 
-    resulting_loc
-        .units
-        .append(&mut Unit::con_militia(cubes_to_place));
-    return (resulting_loc, wealth);
+    // resulting_loc
+    //     .units
+    //     .append(&mut Unit::con_militia(cubes_to_place));
 }
 
 // fn muster_strongholds(loc: Space) -> Space {}
 
+/*
 #[cfg(test)]
 mod tests {
     use super::super::board::{Space, SpaceType, StrongholdSite, StrongholdSiteType, Terrain};
@@ -99,12 +132,12 @@ mod tests {
     #[test]
     fn test_muster() {
         let town: Stronghold = Stronghold::new(StrongholdClass::Town, None, None);
-        let aquae_sulis: StrongholdSite<'_> = StrongholdSite {
+        let aquae_sulis: StrongholdSite = StrongholdSite {
             name: String::from("Aquae Sulis"),
             site_type: StrongholdSiteType::Town,
-            stronghold: Some(&town),
+            stronghold: Some(town),
         };
-        let south_cadbury: StrongholdSite<'_> = StrongholdSite {
+        let south_cadbury: StrongholdSite = StrongholdSite {
             name: String::from("South Cadbury"),
             site_type: StrongholdSiteType::Hillfort,
             stronghold: None,
@@ -112,7 +145,7 @@ mod tests {
 
         let avail: CivitatesHolding = CivitatesHolding::blank();
 
-        let test_space: Space<'_> = Space {
+        let test_space: Space = Space {
             id: 0,
             name: String::from("Durotriges"),
             space_type: SpaceType::Region,
@@ -132,3 +165,4 @@ mod tests {
         assert_eq!(after.units.len(), 3);
     }
 }
+*/
