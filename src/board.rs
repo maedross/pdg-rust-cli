@@ -8,6 +8,7 @@ use serde::{Deserialize, Serialize};
 use serde_yaml::{self, Value};
 use std::{collections::HashMap, fs, str::FromStr, vec};
 
+#[derive(Clone, Debug)]
 pub struct Board {
     pub map: Map,
     pub edge_track: EdgeTrack,
@@ -127,6 +128,7 @@ impl Board {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Map {
     pub land: HashMap<String, Space>,
     pub off_map_land: HashMap<String, OffMapLandSpace>,
@@ -312,6 +314,7 @@ impl Sea {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct EdgeTrack {
     pub briton_resources: u8,
     pub wealth: u8,
@@ -329,6 +332,8 @@ pub struct EdgeTrack {
     saxon_renown_threshold: Option<u8>,
     scotti_renown_threshold: u8,
 }
+
+#[derive(Clone, Debug)]
 pub struct CivitatesAvailable {
     pub militia: u8,
     pub comitates: u8,
@@ -337,10 +342,12 @@ pub struct CivitatesAvailable {
     pub refugees: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct CivitatesNotYetInPlay {
     pub comitates: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct ScottiAvailable {
     pub raiders: u8,
     pub warbands: u8,
@@ -348,10 +355,12 @@ pub struct ScottiAvailable {
     pub max_settlements: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct ScottiNiallNoigiallach {
     pub raiders: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct SaxonsAvailable {
     pub raiders: u8,
     pub warbands: u8,
@@ -359,19 +368,23 @@ pub struct SaxonsAvailable {
     pub max_settlements: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct DuxAvailable {
     pub cavalry: u8,
     pub forts: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct DuxCasualties {
     pub cavalry: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct DuxOutOfPlay {
     pub cavalry: u8,
 }
 
+#[derive(Clone, Debug)]
 pub enum Imperium {
     RomanRule(Dominance),
     Autonomy(Dominance),

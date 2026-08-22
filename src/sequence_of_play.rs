@@ -2,7 +2,7 @@ use dialoguer::Select;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 
-use crate::board::build_scenario_from_yaml;
+use crate::board::{Board, build_scenario_from_yaml};
 use crate::commands;
 
 use super::concepts::Player;
@@ -142,6 +142,7 @@ pub struct SequenceOfPlay {
     event_deck: VecDeque<Event>,
     current_event: Event,
     event_discard: VecDeque<Event>,
+    board: Board,
 }
 
 impl fmt::Display for SequenceOfPlay {
@@ -157,7 +158,7 @@ impl fmt::Display for SequenceOfPlay {
 // TODO: Track players in hashmap and vecs
 // TODO: Pretty print
 impl SequenceOfPlay {
-    pub fn new(mut events: VecDeque<Event>) -> Self {
+    pub fn new(mut events: VecDeque<Event>, board: Board) -> Self {
         let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
         player_eligibilities.insert(Civitates, Eligible);
         player_eligibilities.insert(Dux, Eligible);
@@ -176,6 +177,7 @@ impl SequenceOfPlay {
             event_deck: events,
             current_event: curr_event,
             event_discard: discard,
+            board,
         }
     }
 
@@ -186,7 +188,7 @@ impl SequenceOfPlay {
                 if self.current_player > 3
                     || self.available_actions.state == AvailableActionState::End
                 {
-                    print!("Ending round");
+                    println!("Ending round");
                     self.state = SequenceOfPlayState::ResetEligibility;
                 } else {
                     println!("Continuing round");
@@ -287,10 +289,25 @@ impl SequenceOfPlay {
                         println!(
                             "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
                         );
-                        commands::muster(&mut build_scenario_from_yaml(
-                            "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml",
-                            "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml",
-                        ));
+                        let command_options: Vec<String> =
+                            get_commands(self.current_event.eligibility[self.current_player]);
+                        let selected_command: String = command_options[Select::new()
+                            .with_prompt(format!("Select one of the following Commands!"))
+                            .items(&command_options)
+                            .interact()
+                            .unwrap()]
+                        .clone();
+                        let action_func = validate_command_selection(
+                            self.current_event.eligibility[self.current_player],
+                            &selected_command,
+                        );
+                        match action_func {
+                            Ok(f) => f(&mut self.board),
+                            Err(e) => {
+                                println!("{}", e);
+                                println!("For now, just marking player as Acted and continuing");
+                            }
+                        }
                         self.player_eligibilities.insert(
                             self.current_event.eligibility[self.current_player],
                             PlayerState::Acted,
@@ -359,7 +376,7 @@ impl SequenceOfPlay {
                 self.current_event = self.event_deck.pop_front().unwrap();
                 self.current_player = 0;
                 match self.event_deck[0].event_type {
-                    EventType::Standard => self.state = SequenceOfPlayState::ChoosingAction,
+                    EventType::Standard => self.state = SequenceOfPlayState::CheckPlayerStatus,
                     EventType::Epoch => {
                         self.state = SequenceOfPlayState::Epoch;
                         let epoch: Event = self.event_deck.pop_front().unwrap();
@@ -392,5 +409,60 @@ impl SequenceOfPlay {
             }
             _ => panic!("Attempting to do epoch round while in {:?}", self.state),
         }
+    }
+}
+
+fn get_commands(current_player: Player) -> Vec<String> {
+    let commands;
+    match current_player {
+        Player::Civitates => {
+            commands = vec!["Muster", "March", "Trade", "Battle"];
+        }
+        Player::Dux => {
+            commands = vec!["Train", "March", "Intercept", "Battle"];
+        }
+        Player::Saxons => {
+            commands = vec!["Raid", "Return", "March", "Battle"];
+        }
+        Player::Scotti => {
+            commands = vec!["Raid", "Return", "March", "Battle"];
+        }
+    }
+    return commands.iter().map(|s| s.to_string()).collect();
+}
+
+fn validate_command_selection(
+    current_player: Player,
+    selected_command: &str,
+) -> Result<fn(&mut Board), &str> {
+    match current_player {
+        Player::Civitates => match selected_command {
+            "Muster" => Ok(commands::muster),
+            "March" => Err("Civitates March command not yet implemented"),
+            "Trade" => Err("Civitates Trade command not yet implemented"),
+            "Battle" => Err("Civitates Battle command not yet implemented"),
+            _ => Err("Selected a Command that does not exist"),
+        },
+        Player::Dux => match selected_command {
+            "Train" => Err("Dux Train command not yet implemented"),
+            "March" => Err("Dux March command not yet implemented"),
+            "Intercept" => Err("Dux Intercept command not yet implemented"),
+            "Battle" => Err("Dux Battle command not yet implemented"),
+            _ => Err("Selected a Command that does not exist"),
+        },
+        Player::Saxons => match selected_command {
+            "Raid" => Err("Saxons Raid command not yet implemented"),
+            "Return" => Err("Saxons Return command not yet implemented"),
+            "March" => Err("Saxons March command not yet implemented"),
+            "Battle" => Err("Saxons Battle command not yet implemented"),
+            _ => Err("Selected a Command that does not exist"),
+        },
+        Player::Scotti => match selected_command {
+            "Raid" => Err("Scotti Raid command not yet implemented"),
+            "Return" => Err("Scotti Return command not yet implemented"),
+            "March" => Err("Scotti March command not yet implemented"),
+            "Battle" => Err("Scotti Battle command not yet implemented"),
+            _ => Err("Selected a Command that does not exist"),
+        },
     }
 }
