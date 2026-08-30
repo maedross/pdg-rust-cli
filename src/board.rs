@@ -2,7 +2,7 @@ use crate::{board::{
     Dominance::{Civilian, Military},
     Imperium::{Autonomy, Fragmentation, RomanRule},
 }, concepts::{Nationality, StrongholdClass, UnitClass}};
-
+use tracing::{Level, event, instrument};
 use super::concepts::{Player, Stronghold, Unit};
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self, Value};
@@ -397,6 +397,7 @@ pub enum Dominance {
     Civilian,
 }
 
+#[instrument]
 pub fn build_map_from_yaml(file_path: &str) -> Map {
     let contents = fs::read_to_string(file_path).unwrap();
     let values: Vec<Value> = serde_yaml::from_str(&contents).unwrap();
@@ -500,6 +501,7 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
     return game_map;
 }
 
+#[instrument]
 pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -> Board {
     let mut game_map: Map = build_map_from_yaml(map_file_path);
     let contents: String = fs::read_to_string(scenario_file_path).unwrap();
@@ -548,13 +550,12 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
     };
 
     //Spaces
-    println!("Spaces are {:?}", spaces);
+    event!(Level::INFO, ?spaces);
     for space_key in spaces.clone().into_keys() {
         let space_id: &str = space_key.as_str().unwrap();
         let space: &Value = spaces.get(space_id).unwrap();
-        println!("Space is {:?}", space);
         let space_mapping: &serde_yaml::Mapping = space.as_mapping().unwrap();
-        println!("Processing space {}", space_id);
+        event!(Level::INFO, space_id, ?space);
         let x: Option<&mut Space> = game_map.land.get_mut(space_id);
         match x {
             Some(land) => {
@@ -570,7 +571,7 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                 //TODO: Handle altered population
 
                 if land.space_type == SpaceType::Region {
-                    println!("{} has space type {:?}", space_id, land.space_type);
+                    event!(Level::INFO, ?land.space_type);
                     land.top_prosp = space_mapping["Prosperity"].as_mapping().unwrap()["Top"]
                         .as_u64()
                         .unwrap() as u8;
@@ -581,7 +582,7 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                     land.bottom_prosp = space_mapping["Prosperity"].as_u64().unwrap() as u8;
                 }
 
-                println!("Stronghold sites are {:?}", space["Stronghold Sites"].as_mapping().unwrap());
+                event!(Level::INFO, stronghold_sites  = ?space["Stronghold Sites"].as_mapping().unwrap());
                 for (site_name, site_piece) in space["Stronghold Sites"].as_mapping().unwrap().iter() {
                     let site_name = site_name.as_str().unwrap();
                     let site_piece = site_piece.as_mapping().unwrap();
@@ -597,10 +598,8 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                 }
 
                 let unit_list: &serde_yaml::Mapping = space["Units"].as_mapping().unwrap();
-                println!("Units are {:?}", unit_list);
                 for unit in unit_list.keys() {
                     let unit: &str = unit.as_str().unwrap();
-                    println!("Examining {}", unit);
                     match unit {
                         "Cavalry" => {
                             let designation: UnitClass = UnitClass::Cavalry;
@@ -608,7 +607,6 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                             let nationality: Nationality = Nationality::Briton;
                             let plunder: bool = unit_list.contains_key("Without Plunder");
                             let amt = unit_list["Cavalry"].as_mapping().unwrap()["Without Plunder"].as_u64().unwrap();
-                            println!("{:?} plunderless Cavalry", amt);
                             for _ in 0..amt {
                                 land.units.push(Unit { designation, controller, nationality, plunder });
                             }
@@ -620,7 +618,6 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                             let nationality: Nationality = Nationality::Briton;
                             let plunder: bool = unit_list.contains_key("Without Plunder");
                             let amt = militia["Without Plunder"].as_u64().unwrap();
-                            println!("{:?} plunderless Militia", amt);
                             for _ in 0..amt {
                                 land.units.push(Unit { designation, controller, nationality, plunder });
                             }
@@ -635,7 +632,6 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                     Some(sea) => {
                         let patrol = space_mapping["Patrolled"].as_bool().unwrap();
                         sea.patrol = patrol;
-                        println!("Set patrol status for {} to {}", sea.name, patrol);
                     },
                     None => panic!("Unrecognized space ID {}", space_id),
                 }

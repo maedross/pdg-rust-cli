@@ -1,0 +1,369 @@
+  2026-08-30T08:38:40.599178Z  INFO  spaces: Mapping {"Atrebates": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(3), "Bottom": Number(3)}, "Stronghold Sites": Mapping {"Venta Belgarum": Mapping {"Type": String("Fort")}, "Calleva Atrebatum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}, "Brigantes": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Barwick": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(2)}}}, "Cantiaci": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Rutupiae": Mapping {"Type": String("Fort")}, "Durovernum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}, "Carvetii": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Uxellodunum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(3)}}}, "Catuvellauni": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(3), "Bottom": Number(3)}, "Stronghold Sites": Mapping {"Verulamium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Corieltauvi": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Ratae": Mapping {"Type": String("Town")}, "Lindum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}, "Cornovii": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Viroconium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Decangli": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Deva": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(2)}}}, "Demetae": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Moridunum": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Dobunni": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Corinium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(2)}}}, "Dumnonii": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Isca Dumnoniorum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Durotriges": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Aquae Sulis": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Eboracum": Mapping {"Control": String("Briton"), "Prosperity": Number(2), "Stronghold Sites": Mapping {"Eboracum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(5)}}}, "Iceni": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Venta Icenorum": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Londinium": Mapping {"Control": String("Briton"), "Prosperity": Number(4), "Stronghold Sites": Mapping {"Londinium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Novantae": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Mote of Mark": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Ordovices": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Segontium": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Parisi": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Petuaria": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}, "Regni": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Anderida": Mapping {"Type": String("Fort")}, "Noviomagus": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}, "Silures": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Dinas Powys": Mapping {"Type": String("Fort")}, "Isca Silurum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(2)}}}, "Textoverdi": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Pons Aelius": Mapping {"Type": String("Fort")}, "Cataractonium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(3)}}}, "Trinovantes": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Camolodunum": Mapping {"Type": String("Town")}, "Walton Castle": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}, "Votadini": Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Yeavering": Mapping {"Type": String("Hillfort")}, "Taprain Law": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(4)}}}, "Oceanus Britannicus": Mapping {"Patrolled": Bool(true)}, "Oceanus Germanicus": Mapping {"Patrolled": Bool(true)}, "Oceanus Hibernicus": Mapping {"Patrolled": Bool(false)}, "Oceanus Septentrionalis": Mapping {"Patrolled": Bool(false)}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599685Z  INFO  space_id: "Atrebates", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(3), "Bottom": Number(3)}, "Stronghold Sites": Mapping {"Venta Belgarum": Mapping {"Type": String("Fort")}, "Calleva Atrebatum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599716Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599733Z  INFO  stronghold_sites: Mapping {"Venta Belgarum": Mapping {"Type": String("Fort")}, "Calleva Atrebatum": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599788Z  INFO  space_id: "Brigantes", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Barwick": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(2)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599813Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599827Z  INFO  stronghold_sites: Mapping {"Barwick": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599843Z  INFO  space_id: "Cantiaci", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Rutupiae": Mapping {"Type": String("Fort")}, "Durovernum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599863Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599876Z  INFO  stronghold_sites: Mapping {"Rutupiae": Mapping {"Type": String("Fort")}, "Durovernum": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599895Z  INFO  space_id: "Carvetii", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Uxellodunum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(3)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599913Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599926Z  INFO  stronghold_sites: Mapping {"Uxellodunum": Mapping {"Type": String("Fort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599943Z  INFO  space_id: "Catuvellauni", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(3), "Bottom": Number(3)}, "Stronghold Sites": Mapping {"Verulamium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599963Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599977Z  INFO  stronghold_sites: Mapping {"Verulamium": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.599992Z  INFO  space_id: "Corieltauvi", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Ratae": Mapping {"Type": String("Town")}, "Lindum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600012Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600025Z  INFO  stronghold_sites: Mapping {"Ratae": Mapping {"Type": String("Town")}, "Lindum": Mapping {"Type": String("Fort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600043Z  INFO  space_id: "Cornovii", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Viroconium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600061Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600075Z  INFO  stronghold_sites: Mapping {"Viroconium": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600090Z  INFO  space_id: "Decangli", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Deva": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(2)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600130Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600148Z  INFO  stronghold_sites: Mapping {"Deva": Mapping {"Type": String("Fort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600165Z  INFO  space_id: "Demetae", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Moridunum": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600184Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600197Z  INFO  stronghold_sites: Mapping {"Moridunum": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600212Z  INFO  space_id: "Dobunni", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Corinium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(2)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600230Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600243Z  INFO  stronghold_sites: Mapping {"Corinium": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600258Z  INFO  space_id: "Dumnonii", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Isca Dumnoniorum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600276Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600290Z  INFO  stronghold_sites: Mapping {"Isca Dumnoniorum": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600307Z  INFO  space_id: "Durotriges", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Aquae Sulis": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600326Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600339Z  INFO  stronghold_sites: Mapping {"Aquae Sulis": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600354Z  INFO  space_id: "Eboracum", space: Mapping {"Control": String("Briton"), "Prosperity": Number(2), "Stronghold Sites": Mapping {"Eboracum": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(5)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600372Z  INFO  stronghold_sites: Mapping {"Eboracum": Mapping {"Type": String("Fort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600388Z  INFO  space_id: "Iceni", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Venta Icenorum": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600406Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600419Z  INFO  stronghold_sites: Mapping {"Venta Icenorum": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600435Z  INFO  space_id: "Londinium", space: Mapping {"Control": String("Briton"), "Prosperity": Number(4), "Stronghold Sites": Mapping {"Londinium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600454Z  INFO  stronghold_sites: Mapping {"Londinium": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600471Z  INFO  space_id: "Novantae", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Mote of Mark": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600489Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600502Z  INFO  stronghold_sites: Mapping {"Mote of Mark": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600517Z  INFO  space_id: "Ordovices", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Segontium": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600535Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600548Z  INFO  stronghold_sites: Mapping {"Segontium": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600564Z  INFO  space_id: "Parisi", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Petuaria": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600581Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600596Z  INFO  stronghold_sites: Mapping {"Petuaria": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600613Z  INFO  space_id: "Regni", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Anderida": Mapping {"Type": String("Fort")}, "Noviomagus": Mapping {"Type": String("Town")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600632Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600646Z  INFO  stronghold_sites: Mapping {"Anderida": Mapping {"Type": String("Fort")}, "Noviomagus": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600664Z  INFO  space_id: "Silures", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(1), "Bottom": Number(1)}, "Stronghold Sites": Mapping {"Dinas Powys": Mapping {"Type": String("Fort")}, "Isca Silurum": Mapping {"Type": String("Town")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(2)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600683Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600696Z  INFO  stronghold_sites: Mapping {"Dinas Powys": Mapping {"Type": String("Fort")}, "Isca Silurum": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600712Z  INFO  space_id: "Textoverdi", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Pons Aelius": Mapping {"Type": String("Fort")}, "Cataractonium": Mapping {"Type": String("Town")}}, "Units": Mapping {"Cavalry": Mapping {"Without Plunder": Number(3)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600731Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600744Z  INFO  stronghold_sites: Mapping {"Pons Aelius": Mapping {"Type": String("Fort")}, "Cataractonium": Mapping {"Type": String("Town")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600783Z  INFO  space_id: "Trinovantes", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Camolodunum": Mapping {"Type": String("Town")}, "Walton Castle": Mapping {"Type": String("Fort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(1)}, "Cavalry": Mapping {"Without Plunder": Number(1)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600807Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600821Z  INFO  stronghold_sites: Mapping {"Camolodunum": Mapping {"Type": String("Town")}, "Walton Castle": Mapping {"Type": String("Fort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600840Z  INFO  space_id: "Votadini", space: Mapping {"Control": String("Briton"), "Prosperity": Mapping {"Top": Number(2), "Bottom": Number(2)}, "Stronghold Sites": Mapping {"Yeavering": Mapping {"Type": String("Hillfort")}, "Taprain Law": Mapping {"Type": String("Hillfort")}}, "Units": Mapping {"Militia": Mapping {"Without Plunder": Number(4)}}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600859Z  INFO  land.space_type: Region
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600872Z  INFO  stronghold_sites: Mapping {"Yeavering": Mapping {"Type": String("Hillfort")}, "Taprain Law": Mapping {"Type": String("Hillfort")}}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600889Z  INFO  space_id: "Oceanus Britannicus", space: Mapping {"Patrolled": Bool(true)}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600904Z  INFO  space_id: "Oceanus Germanicus", space: Mapping {"Patrolled": Bool(true)}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600919Z  INFO  space_id: "Oceanus Hibernicus", space: Mapping {"Patrolled": Bool(false)}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.600933Z  INFO  space_id: "Oceanus Septentrionalis", space: Mapping {"Patrolled": Bool(false)}
+    in build_scenario_from_yaml with map_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml" scenario_file_path="C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml"
+
+  2026-08-30T08:38:40.601331Z  INFO  Pushed Calleva Atrebatum to back
+    in build_deck
+
+  2026-08-30T08:38:40.601349Z  INFO  Pushed Ard Ri to back
+    in build_deck
+
+  2026-08-30T08:38:40.601360Z  INFO  Pushed Anderida to back
+    in build_deck
+
+  2026-08-30T08:38:40.601376Z  INFO  Pushed Classis Britannica to back
+    in build_deck
+
+  2026-08-30T08:38:40.601390Z  INFO  Pushed Recruits to back
+    in build_deck
+
+  2026-08-30T08:38:40.601401Z  INFO  Pushed Deira to back
+    in build_deck
+
+  2026-08-30T08:38:40.601411Z  INFO  Pushed With The Cross On His Shoulders to back
+    in build_deck
+
+  2026-08-30T08:38:40.601427Z  INFO  Pushed Ambrosius Aurelianus to back
+    in build_deck
+
+  2026-08-30T08:38:40.601440Z  INFO  Pushed Celyddon Coed to back
+    in build_deck
+
+  2026-08-30T08:38:40.601451Z  INFO  Pushed Fickle Weather to back
+    in build_deck
+
+  2026-08-30T08:38:40.601462Z  INFO  Pushed Magnus Maximus to back
+    in build_deck
+
+  2026-08-30T08:38:40.601503Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:40.601518Z  INFO  Continuing round
+
+  2026-08-30T08:38:40.601531Z  INFO  Checking player state...
+
+  2026-08-30T08:38:40.601540Z  INFO  Saxons is eligible
+
+  2026-08-30T08:38:42.898034Z ERROR  error: "Saxons Raid command not yet implemented"
+
+  2026-08-30T08:38:42.898081Z  WARN  For now, just marking player as Acted and continuing
+
+  2026-08-30T08:38:42.898098Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:42.898106Z  INFO  Continuing round
+
+  2026-08-30T08:38:42.898114Z  INFO  Checking player state...
+
+  2026-08-30T08:38:42.898121Z  INFO  Scotti is eligible
+
+  2026-08-30T08:38:45.172326Z ERROR  error: "Scotti Return command not yet implemented"
+
+  2026-08-30T08:38:45.172357Z  WARN  For now, just marking player as Acted and continuing
+
+  2026-08-30T08:38:45.172388Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:45.172397Z  INFO  Ending round
+
+  2026-08-30T08:38:45.172404Z  INFO  Reseting eligibility...
+
+  2026-08-30T08:38:45.172418Z  INFO  Eligibilities reset
+
+  2026-08-30T08:38:45.172426Z  INFO  Advancing events...
+
+  2026-08-30T08:38:45.172436Z  INFO  Events advanced
+
+
+
+  2026-08-30T08:38:45.172443Z  INFO  state: Player eligibilities: {
+    Scotti: Ineligible,
+    Dux: Eligible,
+    Saxons: Ineligible,
+    Civitates: Eligible,
+}
+Available actions: AvailableActions {
+    a: [
+        Pass,
+        CommandOnly,
+        CommandFeat,
+        Event,
+    ],
+    state: Start,
+}
+
+  2026-08-30T08:38:45.172458Z  INFO  Checking player state...
+
+  2026-08-30T08:38:45.172466Z  INFO  \x1b[32mScotti\x1b[0m is ineligible, proceeding to next player
+
+  2026-08-30T08:38:45.172483Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:45.172491Z  INFO  Continuing round
+
+  2026-08-30T08:38:45.172497Z  INFO  Checking player state...
+
+  2026-08-30T08:38:45.172505Z  INFO  Dux is eligible
+
+  2026-08-30T08:38:48.069321Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:48.069354Z  INFO  Continuing round
+
+  2026-08-30T08:38:48.069363Z  INFO  Checking player state...
+
+  2026-08-30T08:38:48.069372Z  INFO  \x1b[30mSaxons\x1b[0m is ineligible, proceeding to next player
+
+  2026-08-30T08:38:48.069387Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:48.069408Z  INFO  Continuing round
+
+  2026-08-30T08:38:48.069415Z  INFO  Checking player state...
+
+  2026-08-30T08:38:48.069422Z  INFO  Civitates is eligible
+
+  2026-08-30T08:38:50.408436Z ERROR  error: "Civitates March command not yet implemented"
+
+  2026-08-30T08:38:50.408467Z  WARN  For now, just marking player as Acted and continuing
+
+  2026-08-30T08:38:50.408483Z  INFO  Checking for end of round...
+
+  2026-08-30T08:38:50.408491Z  INFO  Ending round
+
+  2026-08-30T08:38:50.408498Z  INFO  Reseting eligibility...
+
+  2026-08-30T08:38:50.408524Z  INFO  Eligibilities reset
+
+  2026-08-30T08:38:50.408535Z  INFO  Advancing events...
+
+  2026-08-30T08:38:50.408545Z  INFO  Events advanced
+
+
+
+  2026-08-30T08:38:50.408552Z  INFO  state: Player eligibilities: {
+    Scotti: Eligible,
+    Dux: Ineligible,
+    Saxons: Eligible,
+    Civitates: Ineligible,
+}
+Available actions: AvailableActions {
+    a: [
+        Pass,
+        CommandOnly,
+        CommandFeat,
+        Event,
+    ],
+    state: Start,
+}
+
+  2026-08-30T08:38:50.408566Z  INFO  Checking player state...
+
+  2026-08-30T08:38:50.408574Z  INFO  Saxons is eligible
+

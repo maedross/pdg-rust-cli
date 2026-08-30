@@ -29,10 +29,10 @@ impl fmt::Display for Player {
 impl fmt::Debug for Player {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Player::Civitates => write!(f, "{}", "Civitates".blue()),
-            Player::Dux => write!(f, "{}", "Dux".red()),
-            Player::Saxons => write!(f, "{}", "Saxons".black()),
-            Player::Scotti => write!(f, "{}", "Scotti".green()),
+            Player::Civitates => write!(f, "{}", "Civitates"),
+            Player::Dux => write!(f, "{}", "Dux"),
+            Player::Saxons => write!(f, "{}", "Saxons"),
+            Player::Scotti => write!(f, "{}", "Scotti"),
         }
     }
 }

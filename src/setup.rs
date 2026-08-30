@@ -1,9 +1,11 @@
 use std::collections::VecDeque;
 use std::todo;
+use tracing::{Level, event, instrument};
 
 use super::concepts::Player::{Civitates, Dux, Saxons, Scotti};
 use super::events::{Event, EventType};
 
+#[instrument]
 pub fn build_deck() -> VecDeque<Event> {
     let calleva_atrebatum: Event = Event {
         name: String::from("Calleva Atrebatum"),
@@ -95,15 +97,26 @@ pub fn build_deck() -> VecDeque<Event> {
     };
     let mut deck: VecDeque<Event> = VecDeque::new();
     deck.push_back(calleva_atrebatum);
+    event!(Level::INFO, "Pushed Calleva Atrebatum to back");
     deck.push_back(ard_ri);
+    event!(Level::INFO, "Pushed Ard Ri to back");
     deck.push_back(anderida);
+    event!(Level::INFO, "Pushed Anderida to back");
     deck.push_back(classis_britannica);
+    event!(Level::INFO, "Pushed Classis Britannica to back");
     deck.push_back(recruits);
+    event!(Level::INFO, "Pushed Recruits to back");
     deck.push_back(deira);
+    event!(Level::INFO, "Pushed Deira to back");
     deck.push_back(with_the_cross_on_his_shoulders);
+    event!(Level::INFO, "Pushed With The Cross On His Shoulders to back");
     deck.push_back(ambrosius_aurelianus);
+    event!(Level::INFO, "Pushed Ambrosius Aurelianus to back");
     deck.push_back(celyddon_coed);
+    event!(Level::INFO, "Pushed Celyddon Coed to back");
     deck.push_back(fickle_weather);
+    event!(Level::INFO, "Pushed Fickle Weather to back");
     deck.push_back(magnus_maximus);
+    event!(Level::INFO, "Pushed Magnus Maximus to back");
     return deck;
 }

@@ -1,16 +1,29 @@
 use events::Event;
 use sequence_of_play::{SequenceOfPlay, SequenceOfPlayState};
-use std::{collections::VecDeque, println};
+use std::{collections::VecDeque, fs::{File, remove_file}, println, sync::Mutex};
+use tracing_subscriber::{fmt};
 
-use crate::board::{build_scenario_from_yaml};
+use crate::board::build_scenario_from_yaml;
+mod board;
+mod commands;
 mod concepts;
 mod events;
 mod sequence_of_play;
 mod setup;
-mod commands;
-mod board;
 
+//TODO: Decouple logging and normal UI
 fn main() {
+    let old_log_deletion = remove_file("debug.log");
+    let format = fmt::format::format()
+        .pretty()
+        .with_target(false)
+        .with_source_location(false);
+    tracing_subscriber::fmt()
+        .event_format(format)
+        .with_writer(Mutex::new(File::create("debug.log").unwrap()))
+        .with_ansi(false)
+        .init();
+
     let board: board::Board = build_scenario_from_yaml(
         "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\map.yaml",
         "C:\\Users\\matth\\Documents\\GitHub\\pdg-rust-cli\\src\\setup\\scenario_de_excidio_britanniae.yaml",
@@ -45,4 +58,3 @@ fn main() {
         };
     }
 }
-
