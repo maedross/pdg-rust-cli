@@ -9,7 +9,7 @@ use dialoguer::{Input, MultiSelect};
 // TODO: Muster (and other commands) as state machine?
 // States would be selecting spaces and spending, type of muster
 // But need to allow for feats as well
-pub fn muster(game: &mut Board) {
+pub fn muster(game: &mut Board, limited: bool) {
     let mut spaces: Vec<&mut Space> =
         game.map
             .land

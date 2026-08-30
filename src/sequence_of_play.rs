@@ -1,9 +1,9 @@
 use dialoguer::Select;
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
-use tracing::{Level, event, instrument};
+use tracing::{Level, event};
 
-use crate::board::{Board, build_scenario_from_yaml};
+use crate::board::{Board};
 use crate::commands;
 
 use super::concepts::Player;
@@ -156,8 +156,6 @@ impl fmt::Display for SequenceOfPlay {
     }
 }
 
-// TODO: Track players in hashmap and vecs
-// TODO: Pretty print
 impl SequenceOfPlay {
     pub fn new(mut events: VecDeque<Event>, board: Board) -> Self {
         let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
@@ -279,13 +277,13 @@ impl SequenceOfPlay {
                             .insert(current_player, PlayerState::Passed);
                     }
                     Action::LimitedCommand => {
-                        // TODO: add a flag marking the command as being limited
                         println!(
                             "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
                         );
-                        let command: Result<fn(&mut Board), String> = get_commands(current_player);
-                        match command {
-                            Ok(f) => f(&mut self.board),
+                        let faction_commands = get_faction_command_options(current_player);
+                        let (_, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
+                        match command_func {
+                            Ok(f) => f(&mut self.board, true),
                             Err(e) => {
                                 event!(Level::ERROR, error = e);
                                 event!(Level::WARN, "For now, just marking player as Acted and continuing");
@@ -298,9 +296,10 @@ impl SequenceOfPlay {
                         println!(
                             "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
                         );
-                        let command: Result<fn(&mut Board), String> = get_commands(current_player);
-                        match command {
-                            Ok(f) => f(&mut self.board),
+                        let faction_commands = get_faction_command_options(current_player);
+                        let (_, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
+                        match command_func {
+                            Ok(f) => f(&mut self.board, false),
                             Err(e) => {
                                 event!(Level::ERROR, error = e);
                                 event!(Level::WARN, "For now, just marking player as Acted and continuing");
@@ -313,8 +312,18 @@ impl SequenceOfPlay {
                         println!(
                             "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
                         );
-                        let command: Result<fn(&mut Board), String> = get_commands(current_player);
-                        match command {
+                        let faction_commands = get_faction_command_options(current_player);
+                        let (command, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
+                        match command_func {
+                            Ok(f) => f(&mut self.board, false),
+                            Err(e) => {
+                                event!(Level::ERROR, error = e);
+                                event!(Level::WARN, "For now, just marking player as Acted and continuing");
+                            }
+                        }
+                        let feats = get_faction_feat_options(current_player, &command);
+                        let feat_func = get_player_feat_selection(current_player, feats);
+                        match feat_func {
                             Ok(f) => f(&mut self.board),
                             Err(e) => {
                                 event!(Level::ERROR, error = e);
@@ -464,8 +473,7 @@ impl SequenceOfPlay {
     Resolve cmd+feat
     Input: &mut Board
 */
-
-fn get_commands(current_player: Player) -> Result<fn(&mut Board), String> {
+fn get_faction_command_options(current_player: Player) -> Vec<String> {
     let commands: Vec<&str>;
     match current_player {
         Player::Civitates => commands = vec!["Muster", "March", "Trade", "Battle"],
@@ -477,18 +485,22 @@ fn get_commands(current_player: Player) -> Result<fn(&mut Board), String> {
         .iter()
         .map(|s| s.to_string())
         .collect::<Vec<String>>();
+    return commands;
+}
+
+fn get_player_command_selection(current_player: Player, commands: Vec<String>) -> (String, Result<fn(&mut Board, bool), String>) {
     let selected_command: String = commands[Select::new()
         .with_prompt(format!("Select one of the following Commands!"))
         .items(&commands)
         .interact()
         .unwrap()]
     .to_string();
-    let action_func: Result<fn(&mut Board), String> =
+    let action_func: Result<fn(&mut Board, bool), String> =
         validate_command_selection(current_player, &selected_command);
-    return action_func;
+    return (selected_command, action_func);
 }
 
-fn get_feats(current_player: Player, command: &str) -> Vec<String> {
+fn get_faction_feat_options(current_player: Player, command: &str) -> Vec<String> {
     let feats: Vec<&str>;
     match command {
         "Muster" => feats = vec!["Rule", "Invite"],
@@ -522,10 +534,23 @@ fn get_feats(current_player: Player, command: &str) -> Vec<String> {
     return feats.iter().map(|s| s.to_string()).collect();
 }
 
+fn get_player_feat_selection(current_player: Player, feats: Vec<String>) -> Result<fn(&mut Board), String> {
+    let selected_feat: String = feats[Select::new()
+        .with_prompt(format!("Select one of the following Feats!"))
+        .items(&feats)
+        .interact()
+        .unwrap()]
+    .to_string();
+    let action_func: Result<fn(&mut Board), String> =
+        validate_feat_selection(current_player, &selected_feat);
+    return action_func;
+}
+
+
 fn validate_command_selection(
     current_player: Player,
     selected_command: &str,
-) -> Result<fn(&mut Board), String> {
+) -> Result<fn(&mut Board, bool), String> {
     match current_player {
         Player::Civitates => match selected_command {
             "Muster" => Ok(commands::muster),
@@ -561,35 +586,35 @@ fn validate_command_selection(
 fn validate_feat_selection(
     current_player: Player,
     selected_feat: &str,
-) -> Result<fn(&mut Board), &str> {
+) -> Result<fn(&mut Board), String> {
     match current_player {
         Player::Civitates => match selected_feat {
-            "Rule" => Err("Civitates Rule feat not yet implemented"),
-            "Invite" => Err("Civitates Invite feat not yet implemented"),
-            "Reinforce" => Err("Civitates Reinforce feat not yet implemented"),
-            "Pillage" => Err("Civitates Pillage feat not yet implemented"),
-            _ => Err("Selected a Feat that does not exist"),
+            "Rule" => Err("Civitates Rule feat not yet implemented".to_string()),
+            "Invite" => Err("Civitates Invite feat not yet implemented".to_string()),
+            "Reinforce" => Err("Civitates Reinforce feat not yet implemented".to_string()),
+            "Pillage" => Err("Civitates Pillage feat not yet implemented".to_string()),
+            _ => Err("Selected a Feat that does not exist".to_string()),
         },
         Player::Dux => match selected_feat {
-            "Build" => Err("Dux Build feat not yet implemented"),
-            "Invite" => Err("Dux Invite feat not yet implemented"),
-            "Requisition" => Err("Dux Requisition feat not yet implemented"),
-            "Retaliate" => Err("Dux Retaliate feat not yet implemented"),
-            _ => Err("Selected a Feat that does not exist"),
+            "Build" => Err("Dux Build feat not yet implemented".to_string()),
+            "Invite" => Err("Dux Invite feat not yet implemented".to_string()),
+            "Requisition" => Err("Dux Requisition feat not yet implemented".to_string()),
+            "Retaliate" => Err("Dux Retaliate feat not yet implemented".to_string()),
+            _ => Err("Selected a Feat that does not exist".to_string()),
         },
         Player::Saxons => match selected_feat {
-            "Settle" => Err("Saxons Settle feat not yet implemented"),
-            "Surprise" => Err("Saxons Surprise feat not yet implemented"),
-            "Ravage" => Err("Saxons Ravage feat not yet implemented"),
-            "Shield Wall" => Err("Saxons Shield Wall feat not yet implemented"),
-            _ => Err("Selected a Feat that does not exist"),
+            "Settle" => Err("Saxons Settle feat not yet implemented".to_string()),
+            "Surprise" => Err("Saxons Surprise feat not yet implemented".to_string()),
+            "Ravage" => Err("Saxons Ravage feat not yet implemented".to_string()),
+            "Shield Wall" => Err("Saxons Shield Wall feat not yet implemented".to_string()),
+            _ => Err("Selected a Feat that does not exist".to_string()),
         },
         Player::Scotti => match selected_feat {
-            "Settle" => Err("Scotti Settle feat not yet implemented"),
-            "Surprise" => Err("Scotti Surprise feat not yet implemented"),
-            "Ransom" => Err("Scotti Ransom feat not yet implemented"),
-            "Entreat" => Err("Scotti Entreat feat not yet implemented"),
-            _ => Err("Selected a Feat that does not exist"),
+            "Settle" => Err("Scotti Settle feat not yet implemented".to_string()),
+            "Surprise" => Err("Scotti Surprise feat not yet implemented".to_string()),
+            "Ransom" => Err("Scotti Ransom feat not yet implemented".to_string()),
+            "Entreat" => Err("Scotti Entreat feat not yet implemented".to_string()),
+            _ => Err("Selected a Feat that does not exist".to_string()),
         },
     }
 }
