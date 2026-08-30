@@ -11,9 +11,8 @@ mod events;
 mod sequence_of_play;
 mod setup;
 
-//TODO: Decouple logging and normal UI
 fn main() {
-    let old_log_deletion = remove_file("debug.log");
+    let _ = remove_file("debug.log");
     let format = fmt::format::format()
         .pretty()
         .with_target(false)
