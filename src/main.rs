@@ -27,6 +27,10 @@ mod setup;
     Load
     More scenarios, select scenario
     Pivotal events
+    Config optimization
+        Shallower
+        unit vs unit_plunder fields
+        More from_str implementations
 */
 fn main() {
     let _ = remove_file("debug.log");
