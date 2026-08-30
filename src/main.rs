@@ -11,6 +11,23 @@ mod events;
 mod sequence_of_play;
 mod setup;
 
+/*
+    TODOs
+    Implement more commands
+        Raid will be a doozy
+        Also movement
+        Also battle
+    Implement feat targeting
+    Implement feats
+    Implement events
+    Implement Epochs
+
+    Quit
+    Save
+    Load
+    More scenarios, select scenario
+    Pivotal events
+*/
 fn main() {
     let _ = remove_file("debug.log");
     let format = fmt::format::format()
