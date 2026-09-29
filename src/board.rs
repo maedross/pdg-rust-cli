@@ -1,25 +1,29 @@
-use crate::{board::{
-    Dominance::{Civilian, Military},
-    Imperium::{Autonomy, Fragmentation, RomanRule},
-}, concepts::{Nationality, StrongholdClass, UnitClass}};
-use tracing::{Level, event, instrument};
 use super::concepts::{Player, Stronghold, Unit};
+use crate::{
+    board::{
+        Dominance::{Civilian, Military},
+        Imperium::{Autonomy, Fragmentation, RomanRule},
+    },
+    concepts::{
+        FORT, Force, HILLFORT, Nationality, SAXON_SETTLEMENT, SCOTTI_SETTLEMENT, StrongholdClass,
+        TOWN, UnitClass,
+    },
+};
+use dialoguer::Select;
 use serde::{Deserialize, Serialize};
 use serde_yaml::{self, Value};
-use std::{collections::HashMap, fs, str::FromStr, vec};
+use std::{cmp::min, collections::HashMap, fs, str::FromStr, vec};
+use tracing::{Level, event, instrument};
 
 #[derive(Clone, Debug)]
 pub struct Board {
     pub map: Map,
     pub edge_track: EdgeTrack,
-    pub civitates_available: CivitatesAvailable,
-    pub civitates_not_yet_in_play: CivitatesNotYetInPlay,
-    pub dux_available: DuxAvailable,
-    pub dux_casualties: DuxCasualties,
-    pub dux_out_of_play: DuxOutOfPlay,
-    pub saxons_available: SaxonsAvailable,
-    pub scotti_available: ScottiAvailable,
-    pub scotti_niall_noigiallach: ScottiNiallNoigiallach,
+    pub available: Available,
+    pub casualties: Casualties,
+    pub out_of_play: OutOfPlay,
+    pub not_yet_in_play: NotYetInPlay,
+    pub niall_noigiallach: NiallNoigiallach,
     pub imperium: Imperium,
     pub roads_maintained: bool,
 }
@@ -34,14 +38,11 @@ impl Board {
         prestige: u8,
         saxon_renown: u8,
         scotti_renown: u8,
-        civitates_available: CivitatesAvailable,
-        civitates_not_yet_in_play: CivitatesNotYetInPlay,
-        dux_available: DuxAvailable,
-        dux_casualties: DuxCasualties,
-        dux_out_of_play: DuxOutOfPlay,
-        saxons_available: SaxonsAvailable,
-        scotti_available: ScottiAvailable,
-        scotti_niall_noigiallach: ScottiNiallNoigiallach,
+        available: Available,
+        casualties: Casualties,
+        out_of_play: OutOfPlay,
+        not_yet_in_play: NotYetInPlay,
+        niall_noigiallach: NiallNoigiallach,
         roads_maintained: bool,
     ) -> Board {
         let mut briton_control: u8 = game_map
@@ -114,17 +115,43 @@ impl Board {
         return Board {
             map: game_map,
             edge_track,
-            civitates_available,
-            civitates_not_yet_in_play,
-            dux_available,
-            dux_casualties,
-            dux_out_of_play,
-            saxons_available,
-            scotti_available,
-            scotti_niall_noigiallach,
+            available,
+            casualties,
+            out_of_play,
+            not_yet_in_play,
+            niall_noigiallach,
             imperium,
             roads_maintained,
         };
+    }
+
+    pub fn apply_spaces_filter(&self, f: fn(&Space) -> bool) -> Vec<String> {
+        self.map
+            .land
+            .values()
+            .filter(|s: &&Space| f(*s))
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
+    }
+
+    fn filter_spaces_unit(
+        &self,
+        class: Option<UnitClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+        plunder: Option<bool>,
+    ) -> Vec<String> {
+        // Returns a Vec of names for spaces containing units with the specified class, controller, nationality, and/or plunder value
+        self.map
+            .land
+            .values()
+            .filter(|s| s.contains_unit(class, controller, nationality, plunder))
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
+    }
+
+    fn update_land_space(&mut self, space: Space) {
+        self.map.land.insert(space.name.clone(), space);
     }
 }
 
@@ -218,6 +245,213 @@ impl<'a> Space {
             units: vec![],
             control: None,
         }
+    }
+
+    pub fn contains_stronghold_class(&self, _class: StrongholdClass) -> bool {
+        return self
+            .stronghold_sites
+            .values()
+            .any(|site: &StrongholdSite| match site.stronghold {
+                Some(s) => match s.class {
+                    _class => true,
+                    _ => false,
+                },
+                _ => false,
+            });
+    }
+
+    pub fn contains_stronghold_controller(&self, player: Player) -> bool {
+        return self
+            .stronghold_sites
+            .values()
+            .any(|site: &StrongholdSite| match site.stronghold {
+                Some(s) => s.controller == player,
+                _ => false,
+            });
+    }
+
+    pub fn contains_unit(
+        &self,
+        class: Option<UnitClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+        plunder: Option<bool>,
+    ) -> bool {
+        let mut result: bool = true;
+        result = result
+            && match class {
+                Some(c) => self.units.iter().any(|u| u.class == c),
+                None => true,
+            };
+        result = result
+            && match controller {
+                Some(c) => self.units.iter().any(|u| u.controller == c),
+                None => true,
+            };
+        result = result
+            && match nationality {
+                Some(n) => self.units.iter().any(|u| u.nationality.unwrap() == n),
+                None => true,
+            };
+        result = result
+            && match plunder {
+                Some(p) => self.units.iter().any(|u| u.plunder == p),
+                None => true,
+            };
+        return result;
+    }
+
+    fn amt_units(
+        &self,
+        class: Option<UnitClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+        plunder: Option<bool>,
+    ) -> u8 {
+        let mut units: Vec<Unit> = self.units.clone();
+        match class {
+            Some(c) => units = units.into_iter().filter(|u| u.class == c).collect(),
+            None => {}
+        };
+        match controller {
+            Some(c) => units = units.into_iter().filter(|u| u.controller == c).collect(),
+            None => {}
+        };
+        match nationality {
+            Some(n) => {
+                units = units
+                    .into_iter()
+                    .filter(|u| u.nationality == Some(n))
+                    .collect()
+            }
+            None => {}
+        };
+        match plunder {
+            Some(p) => units = units.into_iter().filter(|u| u.plunder == p).collect(),
+            None => {}
+        };
+        return units.len() as u8;
+    }
+
+    pub fn add_units(mut self, unit: Unit, amt: u8, board: &mut Board) -> Space {
+        let placeable_amt: u8 = min(
+            board
+                .available
+                .get(Force::Unit(unit.class, unit.nationality)),
+            amt,
+        );
+        board
+            .available
+            .remove(Force::Unit(unit.class, unit.nationality), placeable_amt);
+        for _ in 0..placeable_amt {
+            self.units.push(unit);
+        }
+
+        let mut yet_to_place = amt - placeable_amt;
+        while yet_to_place > 0 {
+            println!(
+                "Could not place all {:?} from Available; you may choose to Voluntarily Remove some from the board to Available to be placed.\n{} remain to be placed.",
+                unit, yet_to_place
+            );
+            let mut valid_spaces: Vec<String> = board.filter_spaces_unit(
+                Some(unit.class),
+                Some(unit.controller),
+                unit.nationality,
+                None,
+            );
+            valid_spaces.push(String::from("Done"));
+            let selection = Select::new()
+                .with_prompt("Select a space or Done:")
+                .items(&valid_spaces)
+                .interact()
+                .unwrap();
+            if selection == 0 {
+                break;
+            } else {
+                let mut selected_space: Space = board
+                    .map
+                    .land
+                    .get(&valid_spaces[selection])
+                    .unwrap()
+                    .clone();
+                let plunderful: u8 = selected_space.amt_units(
+                    Some(unit.class),
+                    Some(unit.controller),
+                    unit.nationality,
+                    Some(true),
+                );
+                let plunderless: u8 = selected_space.amt_units(
+                    Some(unit.class),
+                    Some(unit.controller),
+                    unit.nationality,
+                    Some(false),
+                );
+                if plunderful == 0 {
+                    selected_space = selected_space.remove_unit(unit, board, false);
+                } else if plunderless == 0 {
+                    selected_space = selected_space.remove_unit(unit.with_plunder(), board, false);
+                } else {
+                    let plunder_selection: usize = Select::new()
+                        .with_prompt("Select whether to remove a unit with or without Plunder:")
+                        .items(&vec!["Without Plunder", "With Plunder"])
+                        .interact()
+                        .unwrap();
+                    if plunder_selection == 0 {
+                        selected_space = selected_space.remove_unit(unit, board, false);
+                    } else {
+                        selected_space =
+                            selected_space.remove_unit(unit.with_plunder(), board, false);
+                    }
+                }
+                selected_space = selected_space.remove_unit(unit, board, false);
+                board.update_land_space(selected_space);
+                self.units.push(unit);
+                yet_to_place -= 1;
+            }
+        }
+        return self;
+    }
+
+    pub fn remove_unit(mut self, unit: Unit, board: &mut Board, casualties: bool) -> Space {
+        // Removes one unit from a space to Available or Casualties
+
+        let index = self.units.iter().position(|u| *u == unit);
+        match index {
+            Some(i) => self.units.swap_remove(i),
+            None => panic!(
+                "Trying to remove unit that does not exist in the space: {:?}",
+                unit
+            ),
+        };
+        if casualties {
+            if unit.class == UnitClass::Cavalry {
+                board.casualties.cavalry += 1;
+            } else {
+                panic!(
+                    "Attempting to add a piece to Casualties not currently allowed to go in there"
+                )
+            }
+        } else {
+            board
+                .available
+                .add(Force::Unit(unit.class, unit.nationality), 1)
+        }
+        return self;
+    }
+
+    pub fn replace_units(
+        self,
+        old_force: Unit,
+        new_force: Unit,
+        amt: u8,
+        board: &mut Board,
+    ) -> Space {
+        let mut res = self.clone();
+        for _ in 0..amt {
+            res = res.remove_unit(old_force, board, false);
+            res = res.add_units(new_force, 1, board);
+        }
+        return res;
     }
 }
 
@@ -334,64 +568,204 @@ pub struct EdgeTrack {
 }
 
 #[derive(Clone, Debug)]
-pub struct CivitatesAvailable {
+pub struct Available {
     pub militia: u8,
     pub comitates: u8,
     pub towns: u8,
     pub hillforts: u8,
     pub refugees: u8,
+    pub cavalry: u8,
+    pub forts: u8,
+    pub raiders_saxon: u8,
+    pub warbands_saxon: u8,
+    pub settlements_saxon: u8,
+    pub raiders_scotti: u8,
+    pub warbands_scotti: u8,
+    pub settlements_scotti: u8,
+}
+
+impl Available {
+    pub fn get(&self, force: Force) -> u8 {
+        match force {
+            Force::Stronghold(s) => match s {
+                TOWN => self.towns,
+                HILLFORT => self.hillforts,
+                FORT => self.forts,
+                SAXON_SETTLEMENT => self.settlements_saxon,
+                SCOTTI_SETTLEMENT => self.settlements_scotti,
+                _ => panic!("Invalid stronghold type to lookup in Available: {:?}", s),
+            },
+            Force::Unit(class, nationality) => match class {
+                UnitClass::Comitates => self.comitates,
+                UnitClass::Militia => self.militia,
+                UnitClass::Cavalry => self.cavalry,
+                UnitClass::Raider => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.raiders_saxon,
+                        Nationality::Scotti => self.raiders_scotti,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Raiders")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Raiders"),
+                },
+                UnitClass::Warband => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.warbands_saxon,
+                        Nationality::Scotti => self.warbands_scotti,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Warbands")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Warbands"),
+                },
+            },
+        }
+    }
+
+    pub fn set(&mut self, force: Force, amt: u8) {
+        match force {
+            Force::Stronghold(stronghold) => match stronghold {
+                TOWN => self.towns = amt,
+                HILLFORT => self.hillforts = amt,
+                FORT => self.forts = amt,
+                SAXON_SETTLEMENT => self.settlements_saxon = amt,
+                SCOTTI_SETTLEMENT => self.settlements_scotti = amt,
+                _ => panic!("Unrecognized stronghold type {:?}", stronghold),
+            },
+            Force::Unit(class, nationality) => match class {
+                UnitClass::Comitates => self.comitates = amt,
+                UnitClass::Militia => self.militia = amt,
+                UnitClass::Cavalry => self.cavalry = amt,
+                UnitClass::Raider => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.raiders_saxon = amt,
+                        Nationality::Scotti => self.raiders_scotti = amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Raiders")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Raiders"),
+                },
+                UnitClass::Warband => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.warbands_saxon = amt,
+                        Nationality::Scotti => self.warbands_scotti = amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Warbands")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Warbands"),
+                },
+            },
+        }
+    }
+
+    pub fn add(&mut self, force: Force, amt: u8) {
+        match force {
+            Force::Stronghold(stronghold) => match stronghold {
+                TOWN => self.towns += amt,
+                HILLFORT => self.hillforts += amt,
+                FORT => self.forts += amt,
+                SAXON_SETTLEMENT => self.settlements_saxon += amt,
+                SCOTTI_SETTLEMENT => self.settlements_scotti += amt,
+                _ => panic!("Unrecognized stronghold type {:?}", stronghold),
+            },
+            Force::Unit(class, nationality) => match class {
+                UnitClass::Comitates => self.comitates += amt,
+                UnitClass::Militia => self.militia += amt,
+                UnitClass::Cavalry => self.cavalry += amt,
+                UnitClass::Raider => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.raiders_saxon += amt,
+                        Nationality::Scotti => self.raiders_scotti += amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Raiders")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Raiders"),
+                },
+                UnitClass::Warband => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.warbands_saxon += amt,
+                        Nationality::Scotti => self.warbands_scotti += amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Warbands")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Warbands"),
+                },
+            },
+        }
+    }
+
+    pub fn remove(&mut self, force: Force, amt: u8) {
+        match force {
+            Force::Stronghold(stronghold) => match stronghold {
+                TOWN => self.towns -= amt,
+                HILLFORT => self.hillforts -= amt,
+                FORT => self.forts -= amt,
+                SAXON_SETTLEMENT => self.settlements_saxon -= amt,
+                SCOTTI_SETTLEMENT => self.settlements_scotti -= amt,
+                _ => panic!("Unrecognized stronghold type {:?}", stronghold),
+            },
+            Force::Unit(class, nationality) => match class {
+                UnitClass::Comitates => self.comitates -= amt,
+                UnitClass::Militia => self.militia -= amt,
+                UnitClass::Cavalry => self.cavalry -= amt,
+                UnitClass::Raider => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.raiders_saxon -= amt,
+                        Nationality::Scotti => self.raiders_scotti -= amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Raiders")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Raiders"),
+                },
+                UnitClass::Warband => match nationality {
+                    Some(n) => match n {
+                        Nationality::Saxon => self.warbands_saxon -= amt,
+                        Nationality::Scotti => self.warbands_scotti -= amt,
+                        Nationality::Briton => {
+                            panic!("Trying to check for Available Briton Warbands")
+                        }
+                    },
+                    None => panic!("Need a nationality to check for Available Warbands"),
+                },
+            },
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
-pub struct CivitatesNotYetInPlay {
+pub struct Casualties {
+    pub cavalry: u8,
+}
+
+#[derive(Clone, Debug)]
+pub struct OutOfPlay {
+    pub cavalry: u8,
+}
+
+#[derive(Clone, Debug)]
+pub struct NotYetInPlay {
     pub comitates: u8,
 }
 
 #[derive(Clone, Debug)]
-pub struct ScottiAvailable {
-    pub raiders: u8,
-    pub warbands: u8,
-    pub settlements: u8,
-    pub max_settlements: u8,
-}
-
-#[derive(Clone, Debug)]
-pub struct ScottiNiallNoigiallach {
+pub struct NiallNoigiallach {
     pub raiders: u8,
 }
 
-#[derive(Clone, Debug)]
-pub struct SaxonsAvailable {
-    pub raiders: u8,
-    pub warbands: u8,
-    pub settlements: u8,
-    pub max_settlements: u8,
-}
-
-#[derive(Clone, Debug)]
-pub struct DuxAvailable {
-    pub cavalry: u8,
-    pub forts: u8,
-}
-
-#[derive(Clone, Debug)]
-pub struct DuxCasualties {
-    pub cavalry: u8,
-}
-
-#[derive(Clone, Debug)]
-pub struct DuxOutOfPlay {
-    pub cavalry: u8,
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Imperium {
     RomanRule(Dominance),
     Autonomy(Dominance),
     Fragmentation,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Dominance {
     Military,
     Civilian,
@@ -583,16 +957,39 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                 }
 
                 event!(Level::INFO, stronghold_sites  = ?space["Stronghold Sites"].as_mapping().unwrap());
-                for (site_name, site_piece) in space["Stronghold Sites"].as_mapping().unwrap().iter() {
+                for (site_name, site_piece) in
+                    space["Stronghold Sites"].as_mapping().unwrap().iter()
+                {
                     let site_name = site_name.as_str().unwrap();
                     let site_piece = site_piece.as_mapping().unwrap();
-                    let site: &mut StrongholdSite = land.stronghold_sites.get_mut(site_name).unwrap();
+                    let site: &mut StrongholdSite =
+                        land.stronghold_sites.get_mut(site_name).unwrap();
                     site.stronghold = match site_piece["Type"].as_str().unwrap() {
-                        "Fort" => Some(Stronghold::new(StrongholdClass::Fort, Some(Player::Dux), None)),
-                        "Hillfort" => Some(Stronghold::new(StrongholdClass::Hillfort, Some(Player::Civitates), Some(Nationality::Briton))),
-                        "Town" => Some(Stronghold::new(StrongholdClass::Town, Some(Player::Civitates), Some(Nationality::Briton))),
-                        "Saxon Settlement" => Some(Stronghold::new(StrongholdClass::Settlement, Some(Player::Saxons), Some(Nationality::Saxon))),
-                        "Scotti Settlement" => Some(Stronghold::new(StrongholdClass::Settlement, Some(Player::Scotti), Some(Nationality::Scotti))),
+                        "Fort" => Some(Stronghold::new(
+                            StrongholdClass::Fort,
+                            Some(Player::Dux),
+                            None,
+                        )),
+                        "Hillfort" => Some(Stronghold::new(
+                            StrongholdClass::Hillfort,
+                            Some(Player::Civitates),
+                            Some(Nationality::Briton),
+                        )),
+                        "Town" => Some(Stronghold::new(
+                            StrongholdClass::Town,
+                            Some(Player::Civitates),
+                            Some(Nationality::Briton),
+                        )),
+                        "Saxon Settlement" => Some(Stronghold::new(
+                            StrongholdClass::Settlement,
+                            Some(Player::Saxons),
+                            Some(Nationality::Saxon),
+                        )),
+                        "Scotti Settlement" => Some(Stronghold::new(
+                            StrongholdClass::Settlement,
+                            Some(Player::Scotti),
+                            Some(Nationality::Scotti),
+                        )),
                         _ => panic!("Invalid stronghold type {}", site_name),
                     }
                 }
@@ -602,26 +999,32 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                     let unit: &str = unit.as_str().unwrap();
                     match unit {
                         "Cavalry" => {
-                            let designation: UnitClass = UnitClass::Cavalry;
-                            let controller: Player = Player::Dux;
-                            let nationality: Nationality = Nationality::Briton;
-                            let plunder: bool = unit_list.contains_key("Without Plunder");
-                            let amt = unit_list["Cavalry"].as_mapping().unwrap()["Without Plunder"].as_u64().unwrap();
+                            let amt: u8 =
+                                unit_list["Cavalry"].as_mapping().unwrap()["Without Plunder"]
+                                    .as_u64()
+                                    .unwrap() as u8;
                             for _ in 0..amt {
-                                land.units.push(Unit { designation, controller, nationality, plunder });
+                                land.units.push(Unit {
+                                    class: UnitClass::Cavalry,
+                                    controller: Player::Dux,
+                                    nationality: None,
+                                    plunder: false,
+                                });
                             }
-                        },
+                        }
                         "Militia" => {
-                            let militia: &serde_yaml::Mapping = unit_list["Militia"].as_mapping().unwrap();
-                            let designation: UnitClass = UnitClass::Militia;
-                            let controller: Player = Player::Civitates;
-                            let nationality: Nationality = Nationality::Briton;
-                            let plunder: bool = unit_list.contains_key("Without Plunder");
-                            let amt = militia["Without Plunder"].as_u64().unwrap();
+                            let militia: &serde_yaml::Mapping =
+                                unit_list["Militia"].as_mapping().unwrap();
+                            let amt = militia["Without Plunder"].as_u64().unwrap() as u8;
                             for _ in 0..amt {
-                                land.units.push(Unit { designation, controller, nationality, plunder });
+                                land.units.push(Unit {
+                                    class: UnitClass::Militia,
+                                    controller: Player::Civitates,
+                                    nationality: Some(Nationality::Briton),
+                                    plunder: false,
+                                });
                             }
-                        },
+                        }
                         _ => panic!("Invalid unit type {}", unit),
                     }
                 }
@@ -632,7 +1035,7 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
                     Some(sea) => {
                         let patrol = space_mapping["Patrolled"].as_bool().unwrap();
                         sea.patrol = patrol;
-                    },
+                    }
                     None => panic!("Unrecognized space ID {}", space_id),
                 }
             }
@@ -657,7 +1060,7 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
             .as_mapping()
             .unwrap();
 
-    let civitates_available: CivitatesAvailable = CivitatesAvailable {
+    let available: Available = Available {
         militia: civitates_available_mapping["Militia"].as_u64().unwrap() as u8,
         comitates: civitates_available_mapping
             .get("Comitates")
@@ -665,43 +1068,35 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
         towns: civitates_available_mapping["Towns"].as_u64().unwrap() as u8,
         hillforts: civitates_available_mapping["Hillforts"].as_u64().unwrap() as u8,
         refugees: markers["Refugees"].as_u64().unwrap() as u8,
+        cavalry: dux_available_mapping["Cavalry"].as_u64().unwrap() as u8,
+        forts: dux_available_mapping["Forts"].as_u64().unwrap() as u8,
+        raiders_saxon: saxon_available_mapping["Raiders"].as_u64().unwrap() as u8,
+        warbands_saxon: saxon_available_mapping["Warbands"].as_u64().unwrap() as u8,
+        settlements_saxon: saxon_available_mapping["Settlements"].as_u64().unwrap() as u8,
+        raiders_scotti: scotti_available_mapping["Raiders"].as_u64().unwrap() as u8,
+        warbands_scotti: scotti_available_mapping["Warbands"].as_u64().unwrap() as u8,
+        settlements_scotti: scotti_available_mapping["Settlements"].as_u64().unwrap() as u8,
     };
-    let civitates_not_yet_in_play: CivitatesNotYetInPlay = CivitatesNotYetInPlay {
-        comitates: holding_boxes["Civitates"].as_mapping().unwrap()["Not yet in play"]
-            .as_u64()
-            .unwrap() as u8,
-    };
-    let dux_out_of_play: DuxOutOfPlay = DuxOutOfPlay {
-        cavalry: holding_boxes["Dux"].as_mapping().unwrap()["Out of play"]
-            .as_u64()
-            .unwrap() as u8,
-    };
-    let dux_casualties: DuxCasualties = DuxCasualties {
+
+    let casualties: Casualties = Casualties {
         cavalry: holding_boxes["Dux"].as_mapping().unwrap()["Casualties"]
             .as_u64()
             .unwrap() as u8,
     };
-    let scotti_niall_noigiallach: ScottiNiallNoigiallach = ScottiNiallNoigiallach {
-        raiders: holding_boxes["Scotti"].as_mapping().unwrap()["Niall Noigiallach"]
+    let out_of_play: OutOfPlay = OutOfPlay {
+        cavalry: holding_boxes["Dux"].as_mapping().unwrap()["Out of play"]
             .as_u64()
             .unwrap() as u8,
     };
-
-    let dux_available: DuxAvailable = DuxAvailable {
-        cavalry: dux_available_mapping["Cavalry"].as_u64().unwrap() as u8,
-        forts: dux_available_mapping["Forts"].as_u64().unwrap() as u8,
+    let not_yet_in_play: NotYetInPlay = NotYetInPlay {
+        comitates: holding_boxes["Civitates"].as_mapping().unwrap()["Not yet in play"]
+            .as_u64()
+            .unwrap() as u8,
     };
-    let saxons_available: SaxonsAvailable = SaxonsAvailable {
-        raiders: saxon_available_mapping["Raiders"].as_u64().unwrap() as u8,
-        warbands: saxon_available_mapping["Warbands"].as_u64().unwrap() as u8,
-        settlements: saxon_available_mapping["Settlements"].as_u64().unwrap() as u8,
-        max_settlements: 12,
-    };
-    let scotti_available: ScottiAvailable = ScottiAvailable {
-        raiders: scotti_available_mapping["Raiders"].as_u64().unwrap() as u8,
-        warbands: scotti_available_mapping["Warbands"].as_u64().unwrap() as u8,
-        settlements: scotti_available_mapping["Settlements"].as_u64().unwrap() as u8,
-        max_settlements: 6,
+    let niall_noigiallach: NiallNoigiallach = NiallNoigiallach {
+        raiders: holding_boxes["Scotti"].as_mapping().unwrap()["Niall Noigiallach"]
+            .as_u64()
+            .unwrap() as u8,
     };
 
     let game_board = Board::new(
@@ -713,14 +1108,11 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
         prestige,
         saxon_renown,
         scotti_renown,
-        civitates_available,
-        civitates_not_yet_in_play,
-        dux_available,
-        dux_casualties,
-        dux_out_of_play,
-        saxons_available,
-        scotti_available,
-        scotti_niall_noigiallach,
+        available,
+        casualties,
+        out_of_play,
+        not_yet_in_play,
+        niall_noigiallach,
         roads_maintained,
     );
     return game_board;

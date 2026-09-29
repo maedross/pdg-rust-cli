@@ -2,11 +2,6 @@ use colored::Colorize;
 use std::fmt;
 use serde::{Serialize, Deserialize};
 
-use crate::concepts::{
-    Nationality::Briton,
-    Player::Civitates,
-    UnitClass::{Comitates, Militia},
-};
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Player {
     Civitates,
@@ -37,27 +32,24 @@ impl fmt::Debug for Player {
     }
 }
 
-// Board
-
-
-struct PieceCount {
-    units: Vec<Unit>,
-    strongholds: Vec<Stronghold>,
-}
-
 // Components
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum Nationality {
     Briton,
     Saxon,
     Scotti,
 }
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum Force {
+    Stronghold(Stronghold),
+    Unit(UnitClass, Option<Nationality>),
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Stronghold {
     pub controller: Player,
     pub class: StrongholdClass,
-    pub nationality: Nationality,
+    pub nationality: Option<Nationality>,
     pub escalade: f32,
     pub garrison: u8,
     pub capacity: u8,
@@ -73,7 +65,7 @@ impl Stronghold {
             StrongholdClass::Fort => Stronghold {
                 controller: Player::Dux,
                 class: class,
-                nationality: Nationality::Briton,
+                nationality: Some(Nationality::Briton),
                 escalade: 1.,
                 garrison: 1,
                 capacity: 2,
@@ -81,7 +73,7 @@ impl Stronghold {
             StrongholdClass::Hillfort => Stronghold {
                 controller: Player::Civitates,
                 class: class,
-                nationality: Nationality::Briton,
+                nationality: Some(Nationality::Briton),
                 escalade: 0.5,
                 garrison: 1,
                 capacity: 2,
@@ -89,7 +81,7 @@ impl Stronghold {
             StrongholdClass::Town => Stronghold {
                 controller: Player::Civitates,
                 class: class,
-                nationality: Nationality::Briton,
+                nationality: Some(Nationality::Briton),
                 escalade: 0.5,
                 garrison: 2,
                 capacity: 4,
@@ -97,13 +89,19 @@ impl Stronghold {
             StrongholdClass::Settlement => Stronghold {
                 controller: player.unwrap(),
                 class: class,
-                nationality: nation.unwrap(),
+                nationality: nation,
                 escalade: 0.5,
                 garrison: 0,
                 capacity: 2,
             },
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq)]
+pub struct StrongholdPiece {
+    pub controller: Player,
+    pub stronghold: Stronghold,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -114,50 +112,103 @@ pub enum StrongholdClass {
     Settlement,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Unit {
-    pub designation: UnitClass,
-    pub controller: Player,
-    pub nationality: Nationality,
-    pub plunder: bool,
-}
-
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
 pub enum UnitClass {
     Cavalry,
     Comitates,
-    Foederati,
     Militia,
     Raider,
     Warband,
 }
 
-impl Unit {
-    pub fn con_militia(amt: u8) -> Vec<Unit> {
-        let militia: Unit = Unit {
-            designation: Militia,
-            controller: Civitates,
-            nationality: Briton,
-            plunder: false,
-        };
-        let mut ret: Vec<Unit> = vec![];
-        for _ in 0..amt {
-            ret.push(militia.clone());
-        }
-        return ret;
-    }
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, Hash, PartialEq, Eq)]
+pub struct Unit {
+    pub class: UnitClass,
+    pub controller: Player,
+    pub nationality: Option<Nationality>,
+    pub plunder: bool,
+}
 
-    pub fn con_comitates(amt: u8) -> Vec<Unit> {
-        let militia: Unit = Unit {
-            designation: Comitates,
-            controller: Civitates,
-            nationality: Briton,
-            plunder: false,
-        };
-        let mut ret: Vec<Unit> = vec![];
-        for _ in 0..amt {
-            ret.push(militia.clone());
+impl Unit {
+    pub fn with_plunder(self) -> Unit {
+        Unit {
+            class: self.class,
+            controller: self.controller,
+            nationality: self.nationality,
+            plunder: true,
         }
-        return ret;
     }
 }
+
+pub const FORT: Stronghold = Stronghold{
+    controller: Player::Dux,
+    nationality: None,
+    class: StrongholdClass::Fort,
+    escalade: 1.0,
+    garrison: 1,
+    capacity: 2,
+};
+pub const HILLFORT: Stronghold = Stronghold{
+    controller: Player::Civitates,
+    nationality: Some(Nationality::Briton),
+    class: StrongholdClass::Hillfort,
+    escalade: 0.5,
+    garrison: 1,
+    capacity: 2,
+};
+pub const TOWN: Stronghold = Stronghold {
+    controller: Player::Civitates,
+    nationality: Some(Nationality::Briton),
+    class: StrongholdClass::Town,
+    escalade: 0.5,
+    garrison: 2,
+    capacity: 4,
+};
+pub const SAXON_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Saxons,
+    nationality: Some(Nationality::Saxon),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
+pub const SCOTTI_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Scotti,
+    nationality: Some(Nationality::Scotti),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
+pub const CIVITATES_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Civitates,
+    nationality: Some(Nationality::Saxon),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
+pub const CIVITATES_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Civitates,
+    nationality: Some(Nationality::Scotti),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
+pub const DUX_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Dux,
+    nationality: Some(Nationality::Saxon),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
+pub const DUX_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
+    controller: Player::Dux,
+    nationality: Some(Nationality::Scotti),
+    class: StrongholdClass::Settlement,
+    escalade: 0.5,
+    garrison: 0,
+    capacity: 2
+};
