@@ -8,11 +8,13 @@ mod board;
 mod commands;
 mod concepts;
 mod events;
+mod feats;
 mod sequence_of_play;
 mod setup;
 
 /*
     TODOs
+    Check that the handoff between Muster() and the SoP actually works
     Implement more commands
         Raid will be a doozy
         Also movement
@@ -31,6 +33,8 @@ mod setup;
         Shallower
         unit vs unit_plunder fields
         More from_str implementations
+    Review state machine code and use more advanced patterns
+    Can the command selection logic be layed out a little more nicely?
 */
 fn main() {
     let _ = remove_file("debug.log");
@@ -58,7 +62,7 @@ fn main() {
             SequenceOfPlayState::CheckPlayerStatus => {
                 sop = sop.check_player_status();
             }
-            SequenceOfPlayState::ChoosingAction => {
+            SequenceOfPlayState::ChoosingSequenceOfPlayAction => {
                 sop = sop.get_action();
             }
             SequenceOfPlayState::Acting => {

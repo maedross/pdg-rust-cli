@@ -3,11 +3,12 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use tracing::{Level, event};
 
-use crate::board::{Board};
-use crate::commands;
-
-use super::concepts::Player;
+use super::board::{Board, Imperium, Space, StrongholdSite};
+use super::commands::{self, Command, get_faction_commands};
+use super::concepts::{Player, StrongholdClass};
+use super::concepts::{Unit, UnitClass};
 use super::events::{Event, EventType};
+use super::feats::{Feat, get_faction_feats};
 use Player::{Civitates, Dux, Saxons, Scotti};
 
 use PlayerState::Eligible;
@@ -23,7 +24,7 @@ enum AvailableActionState {
 
 #[derive(Clone, Debug)]
 struct AvailableActions {
-    a: Vec<Action>,
+    a: Vec<SequenceOfPlayAction>,
     state: AvailableActionState,
 }
 
@@ -31,56 +32,66 @@ impl AvailableActions {
     fn new() -> Self {
         AvailableActions {
             a: vec![
-                Action::Pass,
-                Action::CommandOnly,
-                Action::CommandFeat,
-                Action::Event,
+                SequenceOfPlayAction::Pass,
+                SequenceOfPlayAction::CommandOnly,
+                SequenceOfPlayAction::CommandFeat,
+                SequenceOfPlayAction::Event,
             ],
             state: AvailableActionState::Start,
         }
     }
 
-    fn update_available_actions(self, selection: Option<Action>) -> AvailableActions {
+    fn update_available_actions(self, selection: Option<SequenceOfPlayAction>) -> AvailableActions {
         match self.state {
             AvailableActionState::Start => match selection.unwrap() {
-                Action::Pass => self,
-                Action::CommandOnly => AvailableActions {
-                    a: vec![Action::Pass, Action::LimitedCommand],
+                SequenceOfPlayAction::Pass => self,
+                SequenceOfPlayAction::CommandOnly => AvailableActions {
+                    a: vec![
+                        SequenceOfPlayAction::Pass,
+                        SequenceOfPlayAction::LimitedCommand,
+                    ],
                     state: AvailableActionState::A,
                 },
-                Action::CommandFeat => AvailableActions {
-                    a: vec![Action::Pass, Action::Event, Action::LimitedCommand],
+                SequenceOfPlayAction::CommandFeat => AvailableActions {
+                    a: vec![
+                        SequenceOfPlayAction::Pass,
+                        SequenceOfPlayAction::Event,
+                        SequenceOfPlayAction::LimitedCommand,
+                    ],
                     state: AvailableActionState::B,
                 },
-                Action::Event => AvailableActions {
-                    a: vec![Action::Pass, Action::CommandFeat],
+                SequenceOfPlayAction::Event => AvailableActions {
+                    a: vec![
+                        SequenceOfPlayAction::Pass,
+                        SequenceOfPlayAction::CommandFeat,
+                    ],
                     state: AvailableActionState::C,
                 },
                 _ => panic!("Invalid selected action for start"),
             },
             AvailableActionState::A => match selection.unwrap() {
-                Action::Pass => self,
-                Action::LimitedCommand => AvailableActions {
+                SequenceOfPlayAction::Pass => self,
+                SequenceOfPlayAction::LimitedCommand => AvailableActions {
                     a: vec![],
                     state: AvailableActionState::End,
                 },
                 _ => panic!("Invalid selected action from Command Only"),
             },
             AvailableActionState::B => match selection.unwrap() {
-                Action::Pass => self,
-                Action::Event => AvailableActions {
+                SequenceOfPlayAction::Pass => self,
+                SequenceOfPlayAction::Event => AvailableActions {
                     a: vec![],
                     state: AvailableActionState::End,
                 },
-                Action::LimitedCommand => AvailableActions {
+                SequenceOfPlayAction::LimitedCommand => AvailableActions {
                     a: vec![],
                     state: AvailableActionState::End,
                 },
                 _ => panic!("Invalid selected action from Command + Feat"),
             },
             AvailableActionState::C => match selection.unwrap() {
-                Action::Pass => self,
-                Action::CommandFeat => AvailableActions {
+                SequenceOfPlayAction::Pass => self,
+                SequenceOfPlayAction::CommandFeat => AvailableActions {
                     a: vec![],
                     state: AvailableActionState::End,
                 },
@@ -94,7 +105,7 @@ impl AvailableActions {
 }
 
 #[derive(Clone, Copy, Debug)]
-enum Action {
+enum SequenceOfPlayAction {
     Pass,
     CommandOnly,
     LimitedCommand,
@@ -102,14 +113,14 @@ enum Action {
     Event,
 }
 
-impl fmt::Display for Action {
+impl fmt::Display for SequenceOfPlayAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Action::Pass => write!(f, "Pass"),
-            Action::CommandOnly => write!(f, "CommandOnly"),
-            Action::LimitedCommand => write!(f, "LimitedCommand"),
-            Action::CommandFeat => write!(f, "CommandFeat"),
-            Action::Event => write!(f, "Event"),
+            SequenceOfPlayAction::Pass => write!(f, "Pass"),
+            SequenceOfPlayAction::CommandOnly => write!(f, "CommandOnly"),
+            SequenceOfPlayAction::LimitedCommand => write!(f, "LimitedCommand"),
+            SequenceOfPlayAction::CommandFeat => write!(f, "CommandFeat"),
+            SequenceOfPlayAction::Event => write!(f, "Event"),
         }
     }
 }
@@ -126,7 +137,7 @@ pub enum PlayerState {
 pub enum SequenceOfPlayState {
     CheckEndRound,
     CheckPlayerStatus,
-    ChoosingAction,
+    ChoosingSequenceOfPlayAction,
     Acting,
     ResetEligibility,
     AdvanceEvents,
@@ -139,7 +150,7 @@ pub struct SequenceOfPlay {
     current_player: usize,
     pub state: SequenceOfPlayState,
     available_actions: AvailableActions,
-    selected_action: Option<Action>,
+    selected_action: Option<SequenceOfPlayAction>,
     event_deck: VecDeque<Event>,
     current_event: Event,
     event_discard: VecDeque<Event>,
@@ -210,7 +221,7 @@ impl SequenceOfPlay {
                 match self.player_eligibilities.get(&current_player).unwrap() {
                     PlayerState::Eligible => {
                         event!(Level::INFO, "{:?} is eligible", current_player);
-                        self.state = SequenceOfPlayState::ChoosingAction;
+                        self.state = SequenceOfPlayState::ChoosingSequenceOfPlayAction;
                         return self;
                     }
                     PlayerState::Ineligible => {
@@ -239,13 +250,13 @@ impl SequenceOfPlay {
     // TODO: dependency inject query to handle user input vs bot input (vs automated testing input)?
     pub fn get_action(mut self) -> Self {
         match self.state {
-            SequenceOfPlayState::ChoosingAction => {
+            SequenceOfPlayState::ChoosingSequenceOfPlayAction => {
                 println!("Available actions: {:?}", self.available_actions.a);
                 println!(
                     "\nGetting first action from {}",
                     self.current_event.eligibility[self.current_player],
                 );
-                let selection: Action = self.available_actions.a[Select::new()
+                let selection: SequenceOfPlayAction = self.available_actions.a[Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&self.available_actions.a)
                     .interact()
@@ -272,64 +283,25 @@ impl SequenceOfPlay {
                     self.selected_action.unwrap()
                 );
                 match self.selected_action.unwrap() {
-                    Action::Pass => {
+                    SequenceOfPlayAction::Pass => {
                         self.player_eligibilities
                             .insert(current_player, PlayerState::Passed);
                     }
-                    Action::LimitedCommand => {
-                        println!(
-                            "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
-                        );
-                        let faction_commands = get_faction_command_options(current_player);
-                        let (_, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
-                        match command_func {
-                            Ok(f) => f(&mut self.board, true),
-                            Err(e) => {
-                                event!(Level::ERROR, error = e);
-                                event!(Level::WARN, "For now, just marking player as Acted and continuing");
-                            }
-                        }
+                    SequenceOfPlayAction::LimitedCommand => {
+                        let command = get_command_only_selection(current_player);
+                        println!("Selected a limited {}", command);
                         self.player_eligibilities
                             .insert(current_player, PlayerState::Acted);
                     }
-                    Action::CommandOnly => {
-                        println!(
-                            "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
-                        );
-                        let faction_commands = get_faction_command_options(current_player);
-                        let (_, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
-                        match command_func {
-                            Ok(f) => f(&mut self.board, false),
-                            Err(e) => {
-                                event!(Level::ERROR, error = e);
-                                event!(Level::WARN, "For now, just marking player as Acted and continuing");
-                            }
-                        }
+                    SequenceOfPlayAction::CommandOnly => {
+                        let command = get_command_only_selection(current_player);
+                        println!("Selected {} only", command);
                         self.player_eligibilities
                             .insert(current_player, PlayerState::Acted);
                     }
-                    Action::CommandFeat => {
-                        println!(
-                            "You can Command anything, so long as you're Civitates, the Command is Muster, and you only do it for one round"
-                        );
-                        let faction_commands = get_faction_command_options(current_player);
-                        let (command, command_func): (String, Result<fn(&mut Board, bool), String>) = get_player_command_selection(current_player, faction_commands);
-                        match command_func {
-                            Ok(f) => f(&mut self.board, false),
-                            Err(e) => {
-                                event!(Level::ERROR, error = e);
-                                event!(Level::WARN, "For now, just marking player as Acted and continuing");
-                            }
-                        }
-                        let feats = get_faction_feat_options(current_player, &command);
-                        let feat_func = get_player_feat_selection(current_player, feats);
-                        match feat_func {
-                            Ok(f) => f(&mut self.board),
-                            Err(e) => {
-                                event!(Level::ERROR, error = e);
-                                event!(Level::WARN, "For now, just marking player as Acted and continuing");
-                            }
-                        }
+                    SequenceOfPlayAction::CommandFeat => {
+                        let (command, feat) = get_command_plus_feat_selection(current_player, self.board.imperium);
+                        println!("Selected {} + {}", command, feat);
                         self.player_eligibilities
                             .insert(current_player, PlayerState::Acted);
                     }
@@ -430,191 +402,65 @@ impl SequenceOfPlay {
     }
 }
 
-/*fn get_actions(current_player: Player, feat: bool, limited: bool) -> Vec<fn(&mut Board)> {
-
-}*/
-
-/*
-    1. Choose whether to do limcmd, cmd only, cmd+feat
-    2. Retrieve faction commands
-    3. Select command
-    4. Select and pay for command spaces
-    5. If feat
-        1. Retrieve faction feats
-        2. Select feat
-        3. Select feat spaces
-    6. Resolve cmd+feat in desired order in selected spaces
-
-    Retrieving faction commands
-    Input: faction
-    Output: Vec<String>
-
-    Select commands
-    Input: Vec<String>
-    Output: String
-
-    Select and pay for command spaces
-    Input: &mut Board, limcmd flag
-    Mutate: resources, wealth, renown
-    Output: Vec<String>
-
-    Retrieve faction feats
-    Input: faction, command (string)
-    Output: Vec<String>
-
-    Select feat
-    Input: Vec<String>
-    Output: String
-
-    Select feat spaces
-    Input: &Board
-    Output: Vec<String>
-
-    Resolve cmd+feat
-    Input: &mut Board
-*/
-fn get_faction_command_options(current_player: Player) -> Vec<String> {
-    let commands: Vec<&str>;
-    match current_player {
-        Player::Civitates => commands = vec!["Muster", "March", "Trade", "Battle"],
-        Player::Dux => commands = vec!["Train", "March", "Intercept", "Battle"],
-        Player::Saxons => commands = vec!["Raid", "Return", "March", "Battle"],
-        Player::Scotti => commands = vec!["Raid", "Return", "March", "Battle"],
-    }
-    let commands: Vec<String> = commands
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<Vec<String>>();
-    return commands;
-}
-
-fn get_player_command_selection(current_player: Player, commands: Vec<String>) -> (String, Result<fn(&mut Board, bool), String>) {
-    let selected_command: String = commands[Select::new()
+fn get_command_only_selection(current_player: Player) -> Command {
+    let commands: Vec<Command> = get_faction_commands(current_player, None);
+    let selected_command: usize = Select::new()
         .with_prompt(format!("Select one of the following Commands!"))
         .items(&commands)
         .interact()
-        .unwrap()]
-    .to_string();
-    let action_func: Result<fn(&mut Board, bool), String> =
-        validate_command_selection(current_player, &selected_command);
-    return (selected_command, action_func);
+        .unwrap();
+    return commands[selected_command].clone();
 }
 
-fn get_faction_feat_options(current_player: Player, command: &str) -> Vec<String> {
-    let feats: Vec<&str>;
-    match command {
-        "Muster" => feats = vec!["Rule", "Invite"],
-        "March" => match current_player {
-            Player::Civitates => feats = vec!["Rule", "Invite", "Pillage"],
-            Player::Dux => feats = vec!["Build", "Invite", "Requisition"],
-            Player::Saxons => feats = vec!["Settle"],
-            Player::Scotti => feats = vec!["Settle", "Entreat"],
-        },
-        "Trade" => feats = vec!["Rule", "Invite"],
-        "Battle" => match current_player {
-            Player::Civitates => feats = vec!["Reinforce", "Pillage"],
-            Player::Dux => feats = vec!["Requisition", "Retaliate"],
-            Player::Saxons => feats = vec!["Surprise", "Ravage", "Shield Wall"],
-            Player::Scotti => feats = vec!["Surprise", "Ransom", "Entreat"],
-        },
-        "Train" => feats = vec!["Build", "Invite", "Requisition"],
-        "Intercept" => feats = vec!["Invite", "Retaliate"],
-        "Raid" => match current_player {
-            Player::Saxons => feats = vec!["Surprise", "Ravage"],
-            Player::Scotti => feats = vec!["Surprise", "Ransom"],
-            _ => panic!("{} do not have a Feat for {}", current_player, command),
-        },
-        "Return" => match current_player {
-            Player::Saxons => feats = vec!["Settle"],
-            Player::Scotti => feats = vec!["Settle", "Entreat"],
-            _ => panic!("{} do not have a Feat for {}", current_player, command),
-        },
-        _ => panic!("Passed in invalid Command {}", command),
-    }
-    return feats.iter().map(|s| s.to_string()).collect();
-}
+fn get_command_plus_feat_selection(current_player: Player, imperium: Imperium) -> (Command, Feat) {
+    let selected_command: Command;
+    let selected_feat: Feat;
 
-fn get_player_feat_selection(current_player: Player, feats: Vec<String>) -> Result<fn(&mut Board), String> {
-    let selected_feat: String = feats[Select::new()
-        .with_prompt(format!("Select one of the following Feats!"))
-        .items(&feats)
+    let commands: Vec<Command> = get_faction_commands(current_player, None);
+    let feats: Vec<Feat> = get_faction_feats(current_player, None, imperium);
+    let mut initial_options: Vec<String> = commands
+        .clone()
+        .iter()
+        .map(|c| c.to_string())
+        .collect::<Vec<String>>();
+    initial_options.append(
+        &mut feats
+            .clone()
+            .iter()
+            .map(|f| f.to_string())
+            .collect::<Vec<String>>(),
+    );
+    let first_action: usize = Select::new()
+        .with_prompt("Select one of the following Commands or Feats!")
+        .items(&initial_options)
         .interact()
-        .unwrap()]
-    .to_string();
-    let action_func: Result<fn(&mut Board), String> =
-        validate_feat_selection(current_player, &selected_feat);
-    return action_func;
-}
-
-
-fn validate_command_selection(
-    current_player: Player,
-    selected_command: &str,
-) -> Result<fn(&mut Board, bool), String> {
-    match current_player {
-        Player::Civitates => match selected_command {
-            "Muster" => Ok(commands::muster),
-            "March" => Err("Civitates March command not yet implemented".to_string()),
-            "Trade" => Err("Civitates Trade command not yet implemented".to_string()),
-            "Battle" => Err("Civitates Battle command not yet implemented".to_string()),
-            _ => Err("Selected a Command that does not exist".to_string()),
-        },
-        Player::Dux => match selected_command {
-            "Train" => Err("Dux Train command not yet implemented".to_string()),
-            "March" => Err("Dux March command not yet implemented".to_string()),
-            "Intercept" => Err("Dux Intercept command not yet implemented".to_string()),
-            "Battle" => Err("Dux Battle command not yet implemented".to_string()),
-            _ => Err("Selected a Command that does not exist".to_string()),
-        },
-        Player::Saxons => match selected_command {
-            "Raid" => Err("Saxons Raid command not yet implemented".to_string()),
-            "Return" => Err("Saxons Return command not yet implemented".to_string()),
-            "March" => Err("Saxons March command not yet implemented".to_string()),
-            "Battle" => Err("Saxons Battle command not yet implemented".to_string()),
-            _ => Err("Selected a Command that does not exist".to_string()),
-        },
-        Player::Scotti => match selected_command {
-            "Raid" => Err("Scotti Raid command not yet implemented".to_string()),
-            "Return" => Err("Scotti Return command not yet implemented".to_string()),
-            "March" => Err("Scotti March command not yet implemented".to_string()),
-            "Battle" => Err("Scotti Battle command not yet implemented".to_string()),
-            _ => Err("Selected a Command that does not exist".to_string()),
-        },
+        .unwrap();
+    if first_action < commands.len() {
+        selected_command = commands[first_action];
+        let feats: Vec<Feat> = get_faction_feats(current_player, Some(selected_command), imperium);
+        let second_action = Select::new()
+            .with_prompt(format!(
+                "Select one of the following Feats to accompany {}!",
+                selected_command
+            ))
+            .items(&feats)
+            .interact()
+            .unwrap();
+        selected_feat = feats[second_action];
+    } else {
+        selected_feat = feats[first_action - commands.len()];
+        let commands = get_faction_commands(current_player, Some(selected_feat));
+        let second_action = Select::new()
+            .with_prompt(format!(
+                "Select one of the following Commands to accompany {}!",
+                selected_feat
+            ))
+            .items(&commands)
+            .interact()
+            .unwrap();
+        selected_command = commands[second_action];
     }
+    return (selected_command, selected_feat);
 }
 
-fn validate_feat_selection(
-    current_player: Player,
-    selected_feat: &str,
-) -> Result<fn(&mut Board), String> {
-    match current_player {
-        Player::Civitates => match selected_feat {
-            "Rule" => Err("Civitates Rule feat not yet implemented".to_string()),
-            "Invite" => Err("Civitates Invite feat not yet implemented".to_string()),
-            "Reinforce" => Err("Civitates Reinforce feat not yet implemented".to_string()),
-            "Pillage" => Err("Civitates Pillage feat not yet implemented".to_string()),
-            _ => Err("Selected a Feat that does not exist".to_string()),
-        },
-        Player::Dux => match selected_feat {
-            "Build" => Err("Dux Build feat not yet implemented".to_string()),
-            "Invite" => Err("Dux Invite feat not yet implemented".to_string()),
-            "Requisition" => Err("Dux Requisition feat not yet implemented".to_string()),
-            "Retaliate" => Err("Dux Retaliate feat not yet implemented".to_string()),
-            _ => Err("Selected a Feat that does not exist".to_string()),
-        },
-        Player::Saxons => match selected_feat {
-            "Settle" => Err("Saxons Settle feat not yet implemented".to_string()),
-            "Surprise" => Err("Saxons Surprise feat not yet implemented".to_string()),
-            "Ravage" => Err("Saxons Ravage feat not yet implemented".to_string()),
-            "Shield Wall" => Err("Saxons Shield Wall feat not yet implemented".to_string()),
-            _ => Err("Selected a Feat that does not exist".to_string()),
-        },
-        Player::Scotti => match selected_feat {
-            "Settle" => Err("Scotti Settle feat not yet implemented".to_string()),
-            "Surprise" => Err("Scotti Surprise feat not yet implemented".to_string()),
-            "Ransom" => Err("Scotti Ransom feat not yet implemented".to_string()),
-            "Entreat" => Err("Scotti Entreat feat not yet implemented".to_string()),
-            _ => Err("Selected a Feat that does not exist".to_string()),
-        },
-    }
-}
+fn get_event_selection() {}

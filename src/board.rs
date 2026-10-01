@@ -758,7 +758,7 @@ pub struct NiallNoigiallach {
     pub raiders: u8,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Imperium {
     RomanRule(Dominance),
     Autonomy(Dominance),

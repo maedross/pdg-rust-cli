@@ -1,59 +1,162 @@
-use crate::board::CivitatesAvailable;
-use crate::concepts::UnitClass;
+use crate::board::Available;
 
-use super::board::{Board, Space, StrongholdSite};
+use super::board::{Board, Imperium, Space};
 use super::concepts::{Player, StrongholdClass};
-use dialoguer::{Input, MultiSelect};
+use super::feats::Feat;
+use dialoguer::{Input, MultiSelect, Select};
+use std::fmt;
+use tracing::{Level, event, instrument};
 
-// TODO: func for selecting spaces
-// TODO: Muster (and other commands) as state machine?
-// States would be selecting spaces and spending, type of muster
-// But need to allow for feats as well
-pub fn muster(game: &mut Board, limited: bool) {
-    let mut spaces: Vec<&mut Space> =
-        game.map
-            .land
-            .values_mut()
-            .filter(|l: &&mut Space| {
-                l.units.iter().any(|u| {
-                    [UnitClass::Militia, UnitClass::Comitates].contains(&u.designation)
-                        || u.controller == Player::Civitates
-                }) || l.stronghold_sites.values().any(|site: &StrongholdSite| {
-                    match site.stronghold {
-                        Some(stronghold) => {
-                            [StrongholdClass::Hillfort, StrongholdClass::Town]
-                                .contains(&stronghold.class)
-                                || stronghold.controller == Player::Civitates
-                        }
-                        None => false,
-                    }
-                })
-            })
-            .collect();
-    spaces.sort_by(|a, b| a.name.cmp(&b.name));
-    let space_names: Vec<String> = spaces.iter().map(|s| s.name.clone()).collect();
-    let muster_locations = MultiSelect::new()
-        .with_prompt("Select a number of spaces to Muster")
-        .items(&space_names)
-        .interact()
-        .unwrap();
-    println!("Selected spaces:");
-    for s in muster_locations.clone() {
-        println!("{}", space_names[s]);
-    }
-    println!("DEBUG INFO:\nmuster_Locations: {:?}", muster_locations);
-    for s in muster_locations.clone() {
-        if true {
-            let resulting_loc = muster_units(&mut spaces[muster_locations[s]].clone(), game.edge_track.wealth, &mut game.civitates_available);
-        } else {
-            let resulting_loc = muster_units(&mut spaces[muster_locations[s]].clone(), game.edge_track.wealth, &mut game.civitates_available);
-            // resulting_loc = muster_strongholds(loc);
+//TODO could commands and feats be YAMLs? Would that be worth it or just suffering?
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Command {
+    Train,
+    March,
+    Intercept,
+    Battle,
+    Muster,
+    Trade,
+    Raid,
+    Return,
+}
+
+impl fmt::Display for Command {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Command::Train => write!(f, "Train"),
+            Command::March => write!(f, "March"),
+            Command::Intercept => write!(f, "Intercept"),
+            Command::Battle => write!(f, "Battle"),
+            Command::Muster => write!(f, "Muster"),
+            Command::Trade => write!(f, "Trade"),
+            Command::Raid => write!(f, "Raid"),
+            Command::Return => write!(f, "Return"),
         }
     }
 }
 
+pub fn get_faction_commands(player: Player, feat: Option<Feat>) -> Vec<Command> {
+    match feat {
+        None => match player {
+            Player::Civitates => vec![
+                Command::Muster,
+                Command::March,
+                Command::Trade,
+                Command::Battle,
+            ],
+            Player::Dux => vec![
+                Command::Train,
+                Command::March,
+                Command::Intercept,
+                Command::Battle,
+            ],
+            Player::Saxons => vec![
+                Command::Raid,
+                Command::Return,
+                Command::March,
+                Command::Battle,
+            ],
+            Player::Scotti => vec![
+                Command::Raid,
+                Command::Return,
+                Command::March,
+                Command::Battle,
+            ],
+        },
+        Some(f) => match (f, player) {
+            (Feat::Rule, Player::Civitates) => {
+                vec![Command::Muster, Command::March, Command::Trade]
+            }
+            (Feat::Invite, Player::Civitates) => {
+                vec![Command::Muster, Command::March, Command::Trade]
+            }
+            (Feat::Reinforce, Player::Civitates) => vec![Command::Battle],
+            (Feat::Pillage, Player::Civitates) => vec![Command::March, Command::Battle],
+            (Feat::Build, Player::Dux) => vec![Command::Train, Command::March],
+            (Feat::Invite, Player::Dux) => vec![Command::Train, Command::March, Command::Intercept],
+            (Feat::Requisition, Player::Dux) => {
+                vec![Command::Train, Command::March, Command::Battle]
+            }
+            (Feat::Retaliate, Player::Dux) => vec![Command::Intercept, Command::Battle],
+            (Feat::Settle, Player::Saxons) => vec![Command::Return, Command::March],
+            (Feat::Surprise, Player::Saxons) => vec![Command::Raid, Command::Battle],
+            (Feat::Ravage, Player::Saxons) => vec![Command::Raid, Command::Battle],
+            (Feat::ShieldWall, Player::Saxons) => vec![Command::Battle],
+            (Feat::Settle, Player::Scotti) => vec![Command::Return, Command::March],
+            (Feat::Surprise, Player::Scotti) => vec![Command::Raid, Command::Battle],
+            (Feat::Ransom, Player::Scotti) => vec![Command::Raid, Command::Battle],
+            (Feat::Entreat, Player::Scotti) => vec![Command::Return, Command::Battle],
+            _ => panic!("Invalid pairing of Feat and Player: {:?}, {:?}", f, player),
+        },
+    }
+}
+
+fn muster(board: &mut Board) {
+    todo!()
+}
+
+fn civitates_march(board: &mut Board) {
+    todo!()
+}
+
+fn trade(board: &mut Board) {
+    todo!()
+}
+
+fn civitates_battle(board: &mut Board) {
+    todo!()
+}
+
+fn train(board: &mut Board) {
+    todo!()
+}
+
+fn dux_march(board: &mut Board) {
+    todo!()
+}
+
+fn intercept(board: &mut Board) {
+    todo!()
+}
+
+fn dux_battle(board: &mut Board) {
+    todo!()
+}
+
+fn saxon_raid(board: &mut Board) {
+    todo!()
+}
+
+fn saxon_return(board: &mut Board) {
+    todo!()
+}
+
+fn saxon_march(board: &mut Board) {
+    todo!()
+}
+
+fn saxon_battle(board: &mut Board) {
+    todo!()
+}
+
+fn scotti_raid(board: &mut Board) {
+    todo!()
+}
+
+fn scotti_return(board: &mut Board) {
+    todo!()
+}
+
+fn scotti_march(board: &mut Board) {
+    todo!()
+}
+
+fn scotti_battle(board: &mut Board) {
+    todo!()
+}
+
 // TODO: Check available when adding units
-fn muster_units(loc: &mut Space, wealth: u8, avail: &mut CivitatesAvailable) {
+fn muster_units(loc: &mut Space, wealth: u8, avail: &mut Available) {
     let mut cubes_to_place = 0;
 
     for stronghold_site in loc.stronghold_sites.values() {
