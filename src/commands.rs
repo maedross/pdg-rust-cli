@@ -1,9 +1,8 @@
 use crate::board::Available;
 
-use super::board::{Board, Imperium, Space};
+use super::board::{Board, Space};
 use super::concepts::{Player, StrongholdClass};
-use super::feats::Feat;
-use dialoguer::{Input, MultiSelect, Select};
+use dialoguer::Input;
 use std::fmt;
 use tracing::{Level, event, instrument};
 
@@ -35,60 +34,67 @@ impl fmt::Display for Command {
     }
 }
 
-pub fn get_faction_commands(player: Player, feat: Option<Feat>) -> Vec<Command> {
-    match feat {
-        None => match player {
-            Player::Civitates => vec![
-                Command::Muster,
-                Command::March,
-                Command::Trade,
-                Command::Battle,
-            ],
-            Player::Dux => vec![
-                Command::Train,
-                Command::March,
-                Command::Intercept,
-                Command::Battle,
-            ],
-            Player::Saxons => vec![
-                Command::Raid,
-                Command::Return,
-                Command::March,
-                Command::Battle,
-            ],
-            Player::Scotti => vec![
-                Command::Raid,
-                Command::Return,
-                Command::March,
-                Command::Battle,
-            ],
-        },
-        Some(f) => match (f, player) {
-            (Feat::Rule, Player::Civitates) => {
-                vec![Command::Muster, Command::March, Command::Trade]
-            }
-            (Feat::Invite, Player::Civitates) => {
-                vec![Command::Muster, Command::March, Command::Trade]
-            }
-            (Feat::Reinforce, Player::Civitates) => vec![Command::Battle],
-            (Feat::Pillage, Player::Civitates) => vec![Command::March, Command::Battle],
-            (Feat::Build, Player::Dux) => vec![Command::Train, Command::March],
-            (Feat::Invite, Player::Dux) => vec![Command::Train, Command::March, Command::Intercept],
-            (Feat::Requisition, Player::Dux) => {
-                vec![Command::Train, Command::March, Command::Battle]
-            }
-            (Feat::Retaliate, Player::Dux) => vec![Command::Intercept, Command::Battle],
-            (Feat::Settle, Player::Saxons) => vec![Command::Return, Command::March],
-            (Feat::Surprise, Player::Saxons) => vec![Command::Raid, Command::Battle],
-            (Feat::Ravage, Player::Saxons) => vec![Command::Raid, Command::Battle],
-            (Feat::ShieldWall, Player::Saxons) => vec![Command::Battle],
-            (Feat::Settle, Player::Scotti) => vec![Command::Return, Command::March],
-            (Feat::Surprise, Player::Scotti) => vec![Command::Raid, Command::Battle],
-            (Feat::Ransom, Player::Scotti) => vec![Command::Raid, Command::Battle],
-            (Feat::Entreat, Player::Scotti) => vec![Command::Return, Command::Battle],
-            _ => panic!("Invalid pairing of Feat and Player: {:?}, {:?}", f, player),
-        },
+pub fn get_faction_commands(player: Player) -> Vec<Command> {
+    match player {
+        Player::Civitates => vec![
+            Command::Muster,
+            Command::March,
+            Command::Trade,
+            Command::Battle,
+        ],
+        Player::Dux => vec![
+            Command::Train,
+            Command::March,
+            Command::Intercept,
+            Command::Battle,
+        ],
+        Player::Saxons => vec![
+            Command::Raid,
+            Command::Return,
+            Command::March,
+            Command::Battle,
+        ],
+        Player::Scotti => vec![
+            Command::Raid,
+            Command::Return,
+            Command::March,
+            Command::Battle,
+        ],
     }
+}
+
+/*
+    HOW COMMAND EXECUTION WORKS
+
+    Commands have a default Option<u8> number of spaces - None means unlimited
+    Limited sets that max to 1
+
+    Display all the spaces we can select to do a Command
+    These are spaces meeting target requirements that have not already been met
+
+    IF we are allowed a Feat
+        IF we have not already chosen one
+            Also display a list of all spaces we can do all Feats
+        Else we have already chosen one
+            If there are spaces remaining to perform it
+                Display those
+
+    Need to know:
+    * Where have we already executed Commands
+    * Where have we already executed Feats
+    * What Feat did we execute
+
+    Haskell patterning seems the way to go?
+
+    Input: board, limited, selected_command_spaces: Option<Vec>
+
+    Output: whether a feat was taken
+
+    Side effects: board transformation
+
+*/
+pub fn execute_command(command: Command, player: Player, limited: bool, feat: bool, board: &mut Board) -> bool {
+    true
 }
 
 fn muster(board: &mut Board) {

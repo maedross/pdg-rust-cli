@@ -3,124 +3,36 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use tracing::{Level, event};
 
-use super::board::{Board, Imperium, Space, StrongholdSite};
-use super::commands::{self, Command, get_faction_commands};
-use super::concepts::{Player, StrongholdClass};
-use super::concepts::{Unit, UnitClass};
+use crate::commands::execute_command;
+
+use super::board::{Board, Imperium};
+use super::commands::{Command, get_faction_commands};
+use super::concepts::Player;
 use super::events::{Event, EventType};
-use super::feats::{Feat, get_faction_feats};
 use Player::{Civitates, Dux, Saxons, Scotti};
 
-use PlayerState::Eligible;
-
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum AvailableActionState {
-    Start,
-    A,
-    B,
-    C,
+enum ActionSelectionState {
+    FirstSeeking,
+    TookNeither,
+    TookFeat,
+    TookEvent,
     End,
-}
-
-#[derive(Clone, Debug)]
-struct AvailableActions {
-    a: Vec<SequenceOfPlayAction>,
-    state: AvailableActionState,
-}
-
-impl AvailableActions {
-    fn new() -> Self {
-        AvailableActions {
-            a: vec![
-                SequenceOfPlayAction::Pass,
-                SequenceOfPlayAction::CommandOnly,
-                SequenceOfPlayAction::CommandFeat,
-                SequenceOfPlayAction::Event,
-            ],
-            state: AvailableActionState::Start,
-        }
-    }
-
-    fn update_available_actions(self, selection: Option<SequenceOfPlayAction>) -> AvailableActions {
-        match self.state {
-            AvailableActionState::Start => match selection.unwrap() {
-                SequenceOfPlayAction::Pass => self,
-                SequenceOfPlayAction::CommandOnly => AvailableActions {
-                    a: vec![
-                        SequenceOfPlayAction::Pass,
-                        SequenceOfPlayAction::LimitedCommand,
-                    ],
-                    state: AvailableActionState::A,
-                },
-                SequenceOfPlayAction::CommandFeat => AvailableActions {
-                    a: vec![
-                        SequenceOfPlayAction::Pass,
-                        SequenceOfPlayAction::Event,
-                        SequenceOfPlayAction::LimitedCommand,
-                    ],
-                    state: AvailableActionState::B,
-                },
-                SequenceOfPlayAction::Event => AvailableActions {
-                    a: vec![
-                        SequenceOfPlayAction::Pass,
-                        SequenceOfPlayAction::CommandFeat,
-                    ],
-                    state: AvailableActionState::C,
-                },
-                _ => panic!("Invalid selected action for start"),
-            },
-            AvailableActionState::A => match selection.unwrap() {
-                SequenceOfPlayAction::Pass => self,
-                SequenceOfPlayAction::LimitedCommand => AvailableActions {
-                    a: vec![],
-                    state: AvailableActionState::End,
-                },
-                _ => panic!("Invalid selected action from Command Only"),
-            },
-            AvailableActionState::B => match selection.unwrap() {
-                SequenceOfPlayAction::Pass => self,
-                SequenceOfPlayAction::Event => AvailableActions {
-                    a: vec![],
-                    state: AvailableActionState::End,
-                },
-                SequenceOfPlayAction::LimitedCommand => AvailableActions {
-                    a: vec![],
-                    state: AvailableActionState::End,
-                },
-                _ => panic!("Invalid selected action from Command + Feat"),
-            },
-            AvailableActionState::C => match selection.unwrap() {
-                SequenceOfPlayAction::Pass => self,
-                SequenceOfPlayAction::CommandFeat => AvailableActions {
-                    a: vec![],
-                    state: AvailableActionState::End,
-                },
-                _ => panic!("Invalid selected action from Event"),
-            },
-            AvailableActionState::End => {
-                panic!("We're finished with the round, just make a new AvailableActions")
-            }
-        }
-    }
 }
 
 #[derive(Clone, Copy, Debug)]
 enum SequenceOfPlayAction {
     Pass,
-    CommandOnly,
-    LimitedCommand,
-    CommandFeat,
-    Event,
+    Command(Command),
+    Event(u8),
 }
 
 impl fmt::Display for SequenceOfPlayAction {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SequenceOfPlayAction::Pass => write!(f, "Pass"),
-            SequenceOfPlayAction::CommandOnly => write!(f, "CommandOnly"),
-            SequenceOfPlayAction::LimitedCommand => write!(f, "LimitedCommand"),
-            SequenceOfPlayAction::CommandFeat => write!(f, "CommandFeat"),
-            SequenceOfPlayAction::Event => write!(f, "Event"),
+            SequenceOfPlayAction::Command(c) => write!(f, "Command {}", c),
+            SequenceOfPlayAction::Event(e) => write!(f, "Event {:?}", e),
         }
     }
 }
@@ -149,7 +61,7 @@ pub struct SequenceOfPlay {
     player_eligibilities: HashMap<Player, PlayerState>,
     current_player: usize,
     pub state: SequenceOfPlayState,
-    available_actions: AvailableActions,
+    action_selection_state: ActionSelectionState,
     selected_action: Option<SequenceOfPlayAction>,
     event_deck: VecDeque<Event>,
     current_event: Event,
@@ -159,21 +71,17 @@ pub struct SequenceOfPlay {
 
 impl fmt::Display for SequenceOfPlay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Player eligibilities: {:#?}\nAvailable actions: {:#?}",
-            self.player_eligibilities, self.available_actions
-        )
+        write!(f, "Player eligibilities: {:#?}", self.player_eligibilities)
     }
 }
 
 impl SequenceOfPlay {
     pub fn new(mut events: VecDeque<Event>, board: Board) -> Self {
         let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
-        player_eligibilities.insert(Civitates, Eligible);
-        player_eligibilities.insert(Dux, Eligible);
-        player_eligibilities.insert(Saxons, Eligible);
-        player_eligibilities.insert(Scotti, Eligible);
+        player_eligibilities.insert(Civitates, PlayerState::Eligible);
+        player_eligibilities.insert(Dux, PlayerState::Eligible);
+        player_eligibilities.insert(Saxons, PlayerState::Eligible);
+        player_eligibilities.insert(Scotti, PlayerState::Eligible);
 
         let curr_event: Event = events.pop_front().unwrap();
         let discard: VecDeque<Event> = VecDeque::new();
@@ -182,7 +90,7 @@ impl SequenceOfPlay {
             player_eligibilities: player_eligibilities,
             current_player: 0,
             state: SequenceOfPlayState::CheckEndRound,
-            available_actions: AvailableActions::new(),
+            action_selection_state: ActionSelectionState::FirstSeeking,
             selected_action: None,
             event_deck: events,
             current_event: curr_event,
@@ -196,7 +104,7 @@ impl SequenceOfPlay {
         match self.state {
             SequenceOfPlayState::CheckEndRound => {
                 if self.current_player > 3
-                    || self.available_actions.state == AvailableActionState::End
+                    || self.action_selection_state == ActionSelectionState::End
                 {
                     event!(Level::INFO, "Ending round");
                     self.state = SequenceOfPlayState::ResetEligibility;
@@ -251,14 +159,54 @@ impl SequenceOfPlay {
     pub fn get_action(mut self) -> Self {
         match self.state {
             SequenceOfPlayState::ChoosingSequenceOfPlayAction => {
-                println!("Available actions: {:?}", self.available_actions.a);
-                println!(
-                    "\nGetting first action from {}",
-                    self.current_event.eligibility[self.current_player],
+                let player: Player = self.current_event.eligibility[self.current_player];
+                match self.action_selection_state {
+                    ActionSelectionState::FirstSeeking => {
+                        println!("\nGetting first action from {}", player,)
+                    }
+                    ActionSelectionState::End => {
+                        panic!("Shouldn't be in get_action when action_selection_state is End")
+                    }
+                    _ => println!("\nGetting second action from {}", player,),
+                }
+                let mut avaiable_actions: Vec<SequenceOfPlayAction> =
+                    vec![SequenceOfPlayAction::Pass];
+                avaiable_actions.append(
+                    &mut get_faction_commands(player)
+                        .iter()
+                        .map(|c| SequenceOfPlayAction::Command(*c))
+                        .collect::<Vec<SequenceOfPlayAction>>(),
                 );
-                let selection: SequenceOfPlayAction = self.available_actions.a[Select::new()
+                match self.action_selection_state {
+                    ActionSelectionState::FirstSeeking => {
+                        if self.current_event.unshaded != None {
+                            avaiable_actions.push(SequenceOfPlayAction::Event(
+                                self.current_event.unshaded.unwrap(),
+                            ));
+                        }
+                        if self.current_event.shaded != None {
+                            avaiable_actions.push(SequenceOfPlayAction::Event(
+                                self.current_event.shaded.unwrap(),
+                            ));
+                        }
+                    }
+                    ActionSelectionState::TookFeat => {
+                        if self.current_event.unshaded != None {
+                            avaiable_actions.push(SequenceOfPlayAction::Event(
+                                self.current_event.unshaded.unwrap(),
+                            ));
+                        }
+                        if self.current_event.shaded != None {
+                            avaiable_actions.push(SequenceOfPlayAction::Event(
+                                self.current_event.shaded.unwrap(),
+                            ));
+                        }
+                    }
+                    _ => {}
+                };
+                let selection = avaiable_actions[Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
-                    .items(&self.available_actions.a)
+                    .items(&avaiable_actions)
                     .interact()
                     .unwrap()];
                 println!("Selected {}", selection);
@@ -273,6 +221,8 @@ impl SequenceOfPlay {
         }
     }
 
+    // TODO: This should execute the Pass, Command (possibly limited) (possibly with Feat), or Event
+    // TODO: Be sure to adjust action state
     pub fn acting(mut self) -> Self {
         let current_player: Player = self.current_event.eligibility[self.current_player];
         match self.state {
@@ -284,36 +234,56 @@ impl SequenceOfPlay {
                 );
                 match self.selected_action.unwrap() {
                     SequenceOfPlayAction::Pass => {
+                        match (current_player, self.board.imperium) {
+                            (Player::Civitates, _) => self.board.edge_track.briton_resources += 3,
+                            (Player::Dux, Imperium::Fragmentation) => {
+                                self.board.edge_track.dux_resources += 3
+                            }
+                            (Player::Dux, _) => self.board.edge_track.briton_resources += 3,
+                            (Player::Saxons, _) => self.board.edge_track.saxon_renown += 1,
+                            (Player::Scotti, _) => self.board.edge_track.scotti_renown += 1,
+                        }
                         self.player_eligibilities
                             .insert(current_player, PlayerState::Passed);
                     }
-                    SequenceOfPlayAction::LimitedCommand => {
-                        let command = get_command_only_selection(current_player);
-                        println!("Selected a limited {}", command);
-                        self.player_eligibilities
-                            .insert(current_player, PlayerState::Acted);
+                    SequenceOfPlayAction::Command(command) => match self.action_selection_state {
+                        ActionSelectionState::FirstSeeking => {
+                            if execute_command(
+                                command,
+                                current_player,
+                                false,
+                                true,
+                                &mut self.board,
+                            ) {
+                                self.action_selection_state = ActionSelectionState::TookFeat;
+                            } else {
+                                self.action_selection_state = ActionSelectionState::TookNeither;
+                            }
+                        },
+                        ActionSelectionState::TookEvent => {
+                            execute_command(command, current_player, false, true, &mut self.board);
+                            self.action_selection_state = ActionSelectionState::End;
+                        },
+                        ActionSelectionState::TookNeither => {
+                            execute_command(command, current_player, true, false, &mut self.board);
+                            self.action_selection_state = ActionSelectionState::End;
+                        },
+                        ActionSelectionState::TookFeat => {
+                            execute_command(command, current_player, true, false, &mut self.board);
+                            self.action_selection_state = ActionSelectionState::End;
+                        },
+                        ActionSelectionState::End => {
+                            panic!("Really shouldn't be in Acting when ActionSelectionState is End")
+                        },
+                    },
+                    SequenceOfPlayAction::Event(e) => {
+                        todo!();
+                        self.action_selection_state = ActionSelectionState::TookEvent;
                     }
-                    SequenceOfPlayAction::CommandOnly => {
-                        let command = get_command_only_selection(current_player);
-                        println!("Selected {} only", command);
-                        self.player_eligibilities
-                            .insert(current_player, PlayerState::Acted);
-                    }
-                    SequenceOfPlayAction::CommandFeat => {
-                        let (command, feat) = get_command_plus_feat_selection(current_player, self.board.imperium);
-                        println!("Selected {} + {}", command, feat);
-                        self.player_eligibilities
-                            .insert(current_player, PlayerState::Acted);
-                    }
-                    _ => {
-                        self.player_eligibilities
-                            .insert(current_player, PlayerState::Acted);
-                    }
-                }
+                };
+                self.player_eligibilities
+                    .insert(current_player, PlayerState::Acted);
                 self.state = SequenceOfPlayState::CheckEndRound;
-                self.available_actions = self
-                    .available_actions
-                    .update_available_actions(self.selected_action);
                 self.current_player += 1;
                 return self;
             }
@@ -344,7 +314,7 @@ impl SequenceOfPlay {
                     };
                 }
                 self.player_eligibilities = new_eligibility;
-                self.available_actions = AvailableActions::new();
+                self.action_selection_state = ActionSelectionState::FirstSeeking;
                 self.state = SequenceOfPlayState::AdvanceEvents;
                 event!(Level::INFO, "Eligibilities reset");
                 return self;
@@ -401,66 +371,3 @@ impl SequenceOfPlay {
         }
     }
 }
-
-fn get_command_only_selection(current_player: Player) -> Command {
-    let commands: Vec<Command> = get_faction_commands(current_player, None);
-    let selected_command: usize = Select::new()
-        .with_prompt(format!("Select one of the following Commands!"))
-        .items(&commands)
-        .interact()
-        .unwrap();
-    return commands[selected_command].clone();
-}
-
-fn get_command_plus_feat_selection(current_player: Player, imperium: Imperium) -> (Command, Feat) {
-    let selected_command: Command;
-    let selected_feat: Feat;
-
-    let commands: Vec<Command> = get_faction_commands(current_player, None);
-    let feats: Vec<Feat> = get_faction_feats(current_player, None, imperium);
-    let mut initial_options: Vec<String> = commands
-        .clone()
-        .iter()
-        .map(|c| c.to_string())
-        .collect::<Vec<String>>();
-    initial_options.append(
-        &mut feats
-            .clone()
-            .iter()
-            .map(|f| f.to_string())
-            .collect::<Vec<String>>(),
-    );
-    let first_action: usize = Select::new()
-        .with_prompt("Select one of the following Commands or Feats!")
-        .items(&initial_options)
-        .interact()
-        .unwrap();
-    if first_action < commands.len() {
-        selected_command = commands[first_action];
-        let feats: Vec<Feat> = get_faction_feats(current_player, Some(selected_command), imperium);
-        let second_action = Select::new()
-            .with_prompt(format!(
-                "Select one of the following Feats to accompany {}!",
-                selected_command
-            ))
-            .items(&feats)
-            .interact()
-            .unwrap();
-        selected_feat = feats[second_action];
-    } else {
-        selected_feat = feats[first_action - commands.len()];
-        let commands = get_faction_commands(current_player, Some(selected_feat));
-        let second_action = Select::new()
-            .with_prompt(format!(
-                "Select one of the following Commands to accompany {}!",
-                selected_feat
-            ))
-            .items(&commands)
-            .interact()
-            .unwrap();
-        selected_command = commands[second_action];
-    }
-    return (selected_command, selected_feat);
-}
-
-fn get_event_selection() {}
