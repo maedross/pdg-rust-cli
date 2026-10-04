@@ -1,7 +1,8 @@
+use super::board::{Board, Imperium};
+use super::commands::Command;
+use super::concepts::{Player};
+use super::sequence_of_play::{Action};
 use std::fmt;
-use super::board::{Board, Imperium, Space};
-use super::concepts::{Player, StrongholdClass};
-use super::commands::{Command};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Feat {
@@ -40,44 +41,86 @@ impl fmt::Display for Feat {
     }
 }
 
-pub fn get_faction_feats(
-    current_player: Player,
-    command: Option<Command>,
-    imperium: Imperium,
-) -> Vec<Feat> {
-    match command {
-        None => match (current_player, imperium) {
-            (Player::Civitates, Imperium::Fragmentation) => vec![Feat::Rule, Feat::Reinforce, Feat::Pillage],
-            (Player::Civitates, _) => vec![Feat::Rule, Feat::Invite, Feat::Reinforce, Feat::Pillage],
-            (Player::Dux, Imperium::Fragmentation) => vec![Feat::Build, Feat::Requisition, Feat::Retaliate],
-            (Player::Dux, _) => vec![Feat::Build, Feat::Invite, Feat::Requisition, Feat::Retaliate],
-            (Player::Saxons, _) => vec![Feat::Settle, Feat::Surprise, Feat::Ravage, Feat::ShieldWall],
-            (Player::Scotti, _) => vec![Feat::Settle, Feat::Surprise, Feat::Ransom, Feat::Entreat],
-        },
-        Some(c) => match(c, current_player, imperium) {
-            (Command::Muster, Player::Civitates, Imperium::Fragmentation) => vec![Feat::Rule],
-            (Command::Muster, Player::Civitates, _) => vec![Feat::Rule, Feat::Invite],
-            (Command::March, Player::Civitates, Imperium::Fragmentation) => vec![Feat::Rule, Feat::Pillage],
-            (Command::March, Player::Civitates, _) => vec![Feat::Rule, Feat::Invite, Feat::Pillage],
-            (Command::Trade, Player::Civitates, Imperium::Fragmentation) => vec![Feat::Rule],
-            (Command::Trade, Player::Civitates, _) => vec![Feat::Rule, Feat::Invite],
-            (Command::Battle, Player::Civitates, _) => vec![Feat::Reinforce, Feat::Pillage],
-            (Command::Train, Player::Dux, Imperium::Fragmentation) => vec![Feat::Build, Feat::Requisition],
-            (Command::Train, Player::Dux, _) => vec![Feat::Build, Feat::Invite, Feat::Requisition],
-            (Command::March, Player::Dux, Imperium::Fragmentation) => vec![Feat::Build, Feat::Requisition],
-            (Command::March, Player::Dux, _) => vec![Feat::Build, Feat::Invite, Feat::Requisition],
-            (Command::Intercept, Player::Dux, Imperium::Fragmentation) => vec![Feat::Retaliate],
-            (Command::Intercept, Player::Dux, _) => vec![Feat::Invite, Feat::Retaliate],
-            (Command::Battle, Player::Dux, _) => vec![Feat::Requisition, Feat::Retaliate],
-            (Command::Raid, Player::Saxons, _) => vec![Feat::Surprise, Feat::Ravage],
-            (Command::Return, Player::Saxons, _) => vec![Feat::Settle],
-            (Command::March, Player::Saxons, _) => vec![Feat::Settle],
-            (Command::Battle, Player::Saxons, _) => vec![Feat::Surprise, Feat::Ravage, Feat::ShieldWall],
-            (Command::Raid, Player::Scotti, _) => vec![Feat::Surprise, Feat::Ransom],
-            (Command::Return, Player::Scotti, _) => vec![Feat::Settle, Feat::Entreat],
-            (Command::March, Player::Scotti, _) => vec![Feat::Settle, Feat::Entreat],
-            (Command::Battle, Player::Scotti, _) => vec![Feat::Surprise, Feat::Ransom, Feat::Entreat],
-            _ => panic!("Invalid combination of Command, Player, and Imperium: {:?}, {}, {:?}", command, current_player, imperium)
-        }
-    }
+pub const RULE: Action = Action::Feat { name: "Rule", action: rule };
+pub const INVITE_CIVITATTES: Action = Action::Feat { name: "Invite", action: invite_civitates };
+pub const REINFORCE: Action = Action::Feat { name: "Reinforce", action: reinforce };
+pub const PILLAGE: Action = Action::Feat { name: "Pillage", action: pillage };
+
+pub const BUILD: Action = Action::Feat { name: "Build", action: build };
+pub const INVITE_DUX: Action = Action::Feat { name: "Invite", action: invite_dux };
+pub const REQUISITION: Action = Action::Feat { name: "Requisition", action: requisition };
+pub const RETALIATE: Action = Action::Feat { name: "Retaliate", action: retaliate };
+
+pub const SETTLE_SAXONS: Action = Action::Feat { name: "Settle", action: settle_saxons };
+pub const SURPRISE_SAXONS: Action = Action::Feat { name: "Surprise", action: surprise_saxons };
+pub const RAVAGE: Action = Action::Feat { name: "Ravage", action: ravage };
+pub const SHIELDWALL: Action = Action::Feat { name: "Shieldwall", action: shieldwall };
+
+pub const SETTLE_SCOTTI: Action = Action::Feat { name: "Settle", action: settle_scotti };
+pub const SURPRISE_SCOTTI: Action = Action::Feat { name: "Surprise", action: surprise_scotti };
+pub const RANSOM: Action = Action::Feat { name: "Ransom", action: ransom };
+pub const ENTREAT: Action = Action::Feat { name: "Entreat", action: entreat };
+
+fn rule(board: &mut Board) {
+
+}
+
+fn invite_civitates(board: &mut Board) {
+
+}
+
+fn reinforce(board: &mut Board) {
+
+}
+
+fn pillage(board: &mut Board) {
+
+}
+
+fn build(board: &mut Board) {
+
+}
+
+fn invite_dux(board: &mut Board) {
+
+}
+
+fn requisition(board: &mut Board) {
+
+}
+
+fn retaliate(board: &mut Board) {
+
+}
+
+fn settle_saxons(board: &mut Board) {
+
+}
+
+fn surprise_saxons(board: &mut Board) {
+
+}
+
+fn ravage(board: &mut Board) {
+
+}
+
+fn shieldwall(board: &mut Board) {
+
+}
+
+fn settle_scotti(board: &mut Board) {
+
+}
+
+fn surprise_scotti(board: &mut Board) {
+
+}
+
+fn ransom(board: &mut Board) {
+
+}
+
+fn entreat(board: &mut Board) {
+
 }

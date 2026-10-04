@@ -1,15 +1,12 @@
 use dialoguer::Select;
 use std::collections::{HashMap, VecDeque};
-use std::fmt;
+use std::fmt::{self};
 use tracing::{Level, event};
 
-use crate::commands::execute_command;
-
 use super::board::{Board, Imperium};
-use super::commands::{Command, get_faction_commands};
+use super::commands::{get_faction_commands};
 use super::concepts::Player;
 use super::events::{Event, EventType};
-use Player::{Civitates, Dux, Saxons, Scotti};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ActionSelectionState {
@@ -20,19 +17,42 @@ enum ActionSelectionState {
     End,
 }
 
-#[derive(Clone, Copy, Debug)]
-enum SequenceOfPlayAction {
-    Pass,
-    Command(Command),
-    Event(u8),
+#[derive(Clone, Debug)]
+pub enum Action {
+    Command {
+        name: &'static str,
+        action: fn(&mut Board, bool, bool) -> bool,
+    },
+    CommandSpace {
+        name: String,
+        action: fn(&'static str, &mut Board),
+    },
+    Feat {
+        name: &'static str,
+        action: fn(&mut Board),
+    },
+    FeatSpace {
+        name: &'static str,
+        action: fn(&mut Board),
+    },
+    Pass {
+        action: fn(Player, &mut Board),
+    },
+    Event {
+        name: &'static str,
+    },
+    Done,
 }
-
-impl fmt::Display for SequenceOfPlayAction {
+impl fmt::Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SequenceOfPlayAction::Pass => write!(f, "Pass"),
-            SequenceOfPlayAction::Command(c) => write!(f, "Command {}", c),
-            SequenceOfPlayAction::Event(e) => write!(f, "Event {:?}", e),
+            Action::Command { name, action: _ } => write!(f, "{}", name),
+            Action::CommandSpace { name, action: _ } => write!(f, "{}", name),
+            Action::Feat { name, action: _ } => write!(f, "{}", name),
+            Action::FeatSpace { name, action: _ } => write!(f, "{}", name),
+            Action::Pass { action: _ } => write!(f, "Pass"),
+            Action::Event { name } => write!(f, "{}", name),
+            Action::Done => write!(f, "Done"),
         }
     }
 }
@@ -50,7 +70,6 @@ pub enum SequenceOfPlayState {
     CheckEndRound,
     CheckPlayerStatus,
     ChoosingSequenceOfPlayAction,
-    Acting,
     ResetEligibility,
     AdvanceEvents,
     Epoch,
@@ -62,7 +81,6 @@ pub struct SequenceOfPlay {
     current_player: usize,
     pub state: SequenceOfPlayState,
     action_selection_state: ActionSelectionState,
-    selected_action: Option<SequenceOfPlayAction>,
     event_deck: VecDeque<Event>,
     current_event: Event,
     event_discard: VecDeque<Event>,
@@ -78,10 +96,10 @@ impl fmt::Display for SequenceOfPlay {
 impl SequenceOfPlay {
     pub fn new(mut events: VecDeque<Event>, board: Board) -> Self {
         let mut player_eligibilities: HashMap<Player, PlayerState> = HashMap::new();
-        player_eligibilities.insert(Civitates, PlayerState::Eligible);
-        player_eligibilities.insert(Dux, PlayerState::Eligible);
-        player_eligibilities.insert(Saxons, PlayerState::Eligible);
-        player_eligibilities.insert(Scotti, PlayerState::Eligible);
+        player_eligibilities.insert(Player::Civitates, PlayerState::Eligible);
+        player_eligibilities.insert(Player::Dux, PlayerState::Eligible);
+        player_eligibilities.insert(Player::Saxons, PlayerState::Eligible);
+        player_eligibilities.insert(Player::Scotti, PlayerState::Eligible);
 
         let curr_event: Event = events.pop_front().unwrap();
         let discard: VecDeque<Event> = VecDeque::new();
@@ -91,7 +109,6 @@ impl SequenceOfPlay {
             current_player: 0,
             state: SequenceOfPlayState::CheckEndRound,
             action_selection_state: ActionSelectionState::FirstSeeking,
-            selected_action: None,
             event_deck: events,
             current_event: curr_event,
             event_discard: discard,
@@ -156,10 +173,11 @@ impl SequenceOfPlay {
     }
 
     // TODO: dependency inject query to handle user input vs bot input (vs automated testing input)?
+    // TODO: Implement event actions
     pub fn get_action(mut self) -> Self {
+        let player: Player = self.current_event.eligibility[self.current_player];
         match self.state {
             SequenceOfPlayState::ChoosingSequenceOfPlayAction => {
-                let player: Player = self.current_event.eligibility[self.current_player];
                 match self.action_selection_state {
                     ActionSelectionState::FirstSeeking => {
                         println!("\nGetting first action from {}", player,)
@@ -169,126 +187,100 @@ impl SequenceOfPlay {
                     }
                     _ => println!("\nGetting second action from {}", player,),
                 }
-                let mut avaiable_actions: Vec<SequenceOfPlayAction> =
-                    vec![SequenceOfPlayAction::Pass];
-                avaiable_actions.append(
-                    &mut get_faction_commands(player)
-                        .iter()
-                        .map(|c| SequenceOfPlayAction::Command(*c))
-                        .collect::<Vec<SequenceOfPlayAction>>(),
-                );
+                let mut avaiable_actions: Vec<Action> = vec![PASS];
+                avaiable_actions.append(&mut get_faction_commands(player));
                 match self.action_selection_state {
                     ActionSelectionState::FirstSeeking => {
                         if self.current_event.unshaded != None {
-                            avaiable_actions.push(SequenceOfPlayAction::Event(
-                                self.current_event.unshaded.unwrap(),
-                            ));
+                            avaiable_actions.push(Action::Event {
+                                name: "Unshaded event",
+                            });
                         }
                         if self.current_event.shaded != None {
-                            avaiable_actions.push(SequenceOfPlayAction::Event(
-                                self.current_event.shaded.unwrap(),
-                            ));
+                            avaiable_actions.push(Action::Event {
+                                name: "Shaded event",
+                            });
                         }
                     }
                     ActionSelectionState::TookFeat => {
                         if self.current_event.unshaded != None {
-                            avaiable_actions.push(SequenceOfPlayAction::Event(
-                                self.current_event.unshaded.unwrap(),
-                            ));
+                            avaiable_actions.push(Action::Event {
+                                name: "Unshaded event",
+                            });
                         }
                         if self.current_event.shaded != None {
-                            avaiable_actions.push(SequenceOfPlayAction::Event(
-                                self.current_event.shaded.unwrap(),
-                            ));
+                            avaiable_actions.push(Action::Event {
+                                name: "Shaded event",
+                            });
                         }
                     }
                     _ => {}
                 };
-                let selection = avaiable_actions[Select::new()
+                let selection: Action = avaiable_actions[Select::new()
                     .with_prompt(format!("Select one of the following actions!"))
                     .items(&avaiable_actions)
                     .interact()
-                    .unwrap()];
+                    .unwrap()]
+                .clone();
                 println!("Selected {}", selection);
-                self.selected_action = Some(selection);
-                self.state = SequenceOfPlayState::Acting;
-                return self;
-            }
-            _ => panic!(
-                "Can only get action in GettingAction state, currently in {:?}",
-                self.state
-            ),
-        }
-    }
 
-    // TODO: This should execute the Pass, Command (possibly limited) (possibly with Feat), or Event
-    // TODO: Be sure to adjust action state
-    pub fn acting(mut self) -> Self {
-        let current_player: Player = self.current_event.eligibility[self.current_player];
-        match self.state {
-            SequenceOfPlayState::Acting => {
-                println!(
-                    "{} performing action: {:?}",
-                    current_player,
-                    self.selected_action.unwrap()
-                );
-                match self.selected_action.unwrap() {
-                    SequenceOfPlayAction::Pass => {
-                        match (current_player, self.board.imperium) {
-                            (Player::Civitates, _) => self.board.edge_track.briton_resources += 3,
-                            (Player::Dux, Imperium::Fragmentation) => {
-                                self.board.edge_track.dux_resources += 3
-                            }
-                            (Player::Dux, _) => self.board.edge_track.briton_resources += 3,
-                            (Player::Saxons, _) => self.board.edge_track.saxon_renown += 1,
-                            (Player::Scotti, _) => self.board.edge_track.scotti_renown += 1,
-                        }
-                        self.player_eligibilities
-                            .insert(current_player, PlayerState::Passed);
-                    }
-                    SequenceOfPlayAction::Command(command) => match self.action_selection_state {
+                match selection {
+                    Action::Command { name: _, action } => match self.action_selection_state {
                         ActionSelectionState::FirstSeeking => {
-                            if execute_command(
-                                command,
-                                current_player,
-                                false,
-                                true,
-                                &mut self.board,
-                            ) {
+                            let command_took_feat: bool = (action)(&mut self.board, false, true);
+                            if command_took_feat {
                                 self.action_selection_state = ActionSelectionState::TookFeat;
                             } else {
                                 self.action_selection_state = ActionSelectionState::TookNeither;
                             }
-                        },
-                        ActionSelectionState::TookEvent => {
-                            execute_command(command, current_player, false, true, &mut self.board);
-                            self.action_selection_state = ActionSelectionState::End;
-                        },
+                            self.player_eligibilities.insert(player, PlayerState::Acted);
+                        }
                         ActionSelectionState::TookNeither => {
-                            execute_command(command, current_player, true, false, &mut self.board);
+                            let _ = (action)(&mut self.board, true, false);
                             self.action_selection_state = ActionSelectionState::End;
-                        },
+                            self.player_eligibilities.insert(player, PlayerState::Acted);
+                        }
                         ActionSelectionState::TookFeat => {
-                            execute_command(command, current_player, true, false, &mut self.board);
+                            let _ = (action)(&mut self.board, true, false);
                             self.action_selection_state = ActionSelectionState::End;
-                        },
-                        ActionSelectionState::End => {
-                            panic!("Really shouldn't be in Acting when ActionSelectionState is End")
-                        },
+                            self.player_eligibilities.insert(player, PlayerState::Acted);
+                        }
+                        ActionSelectionState::TookEvent => {
+                            let _ = (action)(&mut self.board, false, true);
+                            self.action_selection_state = ActionSelectionState::End;
+                            self.player_eligibilities.insert(player, PlayerState::Acted);
+                        }
+                        ActionSelectionState::End => panic!("Cannot be acting in End state"),
                     },
-                    SequenceOfPlayAction::Event(e) => {
-                        todo!();
-                        self.action_selection_state = ActionSelectionState::TookEvent;
+                    Action::Event { name: _ } => {
+                        println!("EVENTS NOT YET IMPLEMENTED");
+                        match self.action_selection_state {
+                            ActionSelectionState::TookFeat => {
+                                self.action_selection_state = ActionSelectionState::End
+                            }
+                            ActionSelectionState::FirstSeeking => {
+                                self.action_selection_state = ActionSelectionState::TookEvent
+                            }
+                            _ => panic!("Took event from state {:?}", self.action_selection_state),
+                        }
+                        self.player_eligibilities.insert(player, PlayerState::Acted);
                     }
-                };
-                self.player_eligibilities
-                    .insert(current_player, PlayerState::Acted);
-                self.state = SequenceOfPlayState::CheckEndRound;
+                    Action::Pass { action } => {
+                        (action)(player, &mut self.board);
+                        self.player_eligibilities
+                            .insert(player, PlayerState::Passed);
+                    }
+                    _ => panic!(
+                        "Somehow chose something other than a Command, Event, or Pass: {}",
+                        selection
+                    ),
+                }
                 self.current_player += 1;
+                self.state = SequenceOfPlayState::CheckEndRound;
                 return self;
             }
             _ => panic!(
-                "Can only do action in Acting state, currently in {:?} state",
+                "Can only get action in GettingAction state, currently in {:?}",
                 self.state
             ),
         }
@@ -371,3 +363,17 @@ impl SequenceOfPlay {
         }
     }
 }
+
+fn pass(player: Player, board: &mut Board) {
+    match player {
+        Player::Civitates => board.edge_track.briton_resources += 3,
+        Player::Dux => match board.imperium {
+            Imperium::Fragmentation => board.edge_track.dux_resources += 3,
+            _ => board.edge_track.briton_resources += 3,
+        },
+        Player::Saxons => board.edge_track.saxon_renown += 1,
+        Player::Scotti => board.edge_track.scotti_renown += 1,
+    }
+}
+
+const PASS: Action = Action::Pass { action: pass };

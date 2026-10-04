@@ -125,16 +125,7 @@ impl Board {
         };
     }
 
-    pub fn apply_spaces_filter(&self, f: fn(&Space) -> bool) -> Vec<String> {
-        self.map
-            .land
-            .values()
-            .filter(|s: &&Space| f(*s))
-            .map(|s| s.id.clone())
-            .collect::<Vec<String>>()
-    }
-
-    fn filter_spaces_unit(
+    pub fn filter_spaces_unit(
         &self,
         class: Option<UnitClass>,
         controller: Option<Player>,
@@ -146,6 +137,40 @@ impl Board {
             .land
             .values()
             .filter(|s| s.contains_unit(class, controller, nationality, plunder))
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn filter_spaces_stronghold(
+        &self,
+        class: Option<StrongholdClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+    ) -> Vec<String> {
+        self.map
+            .land
+            .values()
+            .filter(|s| s.contains_stronghold(class, controller, nationality))
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn filter_spaces_empty_site(&self, site_type: Option<StrongholdSiteType>) -> Vec<String> {
+        self.map.land.values().filter(|s| s.contains_empty_site(site_type)).map(|s| s.id.clone()).collect::<Vec<String>>()
+    }
+
+    pub fn filter_spaces_pieces(
+        &self,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+    ) -> Vec<String> {
+        self.map
+            .land
+            .values()
+            .filter(|s| {
+                s.contains_unit(None, controller, nationality, None)
+                    || s.contains_stronghold(None, controller, nationality)
+            })
             .map(|s| s.id.clone())
             .collect::<Vec<String>>()
     }
@@ -221,8 +246,8 @@ pub struct Space {
 
 impl<'a> Space {
     fn new(
-        id: &str,
-        name: &str,
+        id: String,
+        name: String,
         space_type: SpaceType,
         terrain: Option<Terrain>,
         adj_spaces: Vec<String>,
@@ -231,8 +256,8 @@ impl<'a> Space {
         stronghold_sites: HashMap<String, StrongholdSite>,
     ) -> Space {
         Space {
-            id: id.to_string(),
-            name: name.to_string(),
+            id: id,
+            name: name,
             space_type,
             terrain,
             adj_spaces,
@@ -247,17 +272,48 @@ impl<'a> Space {
         }
     }
 
-    pub fn contains_stronghold_class(&self, _class: StrongholdClass) -> bool {
-        return self
-            .stronghold_sites
-            .values()
-            .any(|site: &StrongholdSite| match site.stronghold {
-                Some(s) => match s.class {
-                    _class => true,
-                    _ => false,
-                },
-                _ => false,
-            });
+    pub fn contains_stronghold(
+        &self,
+        class: Option<StrongholdClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+    ) -> bool {
+        let mut result: bool = true;
+        result = result
+            && match class {
+                Some(c) => self.stronghold_sites.values().any(|s| match s.stronghold {
+                    Some(stronghold) => stronghold.class == c,
+                    None => false,
+                }),
+                None => false,
+            };
+        result = result
+            && match controller {
+                Some(c) => self.stronghold_sites.values().any(|s| match s.stronghold {
+                    Some(stronghold) => stronghold.controller == c,
+                    None => false,
+                }),
+                None => false,
+            };
+        result = result
+            && match nationality {
+                Some(n) => self.stronghold_sites.values().any(|s| match s.stronghold {
+                    Some(stronghold) => stronghold.nationality == Some(n),
+                    None => false,
+                }),
+                None => false,
+            };
+        return result;
+    }
+
+    pub fn contains_empty_site(&self, site_type: Option<StrongholdSiteType>) -> bool {
+        self.stronghold_sites.values().any(|s| match s.stronghold {
+            Some(_) => false,
+            None => match &site_type {
+                Some(t) => &s.site_type == t,
+                None => true,
+            }
+        })
     }
 
     pub fn contains_stronghold_controller(&self, player: Player) -> bool {
@@ -463,7 +519,7 @@ pub enum SpaceType {
     OffMapLand,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum StrongholdSiteType {
     Hillfort,
     Town,
@@ -781,8 +837,8 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
         let space_type: &str = space["space_type"].as_str().unwrap();
         match space_type {
             "Region" => {
-                let id: &str = space["id"].as_str().unwrap();
-                let name: &str = space["name"].as_str().unwrap();
+                let id = space["id"].as_str().unwrap().to_string();
+                let name = space["name"].as_str().unwrap().to_string();
                 let space_type: SpaceType = SpaceType::Region;
                 let terrain: Option<Terrain> =
                     Some(Terrain::from_str(space["Terrain"].as_str().unwrap()).unwrap());
@@ -808,7 +864,7 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
                     .map(|i| i.as_str().unwrap().to_string())
                     .collect();
                 let space: Space = Space::new(
-                    id,
+                    id.clone(),
                     name,
                     space_type,
                     terrain,
@@ -817,11 +873,11 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
                     pop,
                     stronghold_sites,
                 );
-                game_map.land.insert(id.to_string(), space);
+                game_map.land.insert(id, space);
             }
             "City" => {
-                let id: &str = space["id"].as_str().unwrap();
-                let name: &str = space["name"].as_str().unwrap();
+                let id: String = space["id"].as_str().unwrap().to_string();
+                let name: String = space["name"].as_str().unwrap().to_string();
                 let space_type: SpaceType = SpaceType::City;
                 let terrain: Option<Terrain> = None;
                 let pop: u8 = space["pop"].as_u64().unwrap() as u8;
@@ -846,7 +902,7 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
                     .map(|i| i.as_str().unwrap().to_string())
                     .collect();
                 let space: Space = Space::new(
-                    id,
+                    id.clone(),
                     name,
                     space_type,
                     terrain,
@@ -855,7 +911,7 @@ pub fn build_map_from_yaml(file_path: &str) -> Map {
                     pop,
                     stronghold_sites,
                 );
-                game_map.land.insert(id.to_string(), space);
+                game_map.land.insert(id, space);
             }
             "Sea" => {
                 let id: &str = space["id"].as_str().unwrap();

@@ -36,6 +36,8 @@ mod setup;
     Review state machine code and use more advanced patterns
     Can the command selection logic be layed out a little more nicely?
 */
+
+// TODO: store game history as Vec of boards
 fn main() {
     let _ = remove_file("debug.log");
     let format = fmt::format::format()
@@ -64,9 +66,6 @@ fn main() {
             }
             SequenceOfPlayState::ChoosingSequenceOfPlayAction => {
                 sop = sop.get_action();
-            }
-            SequenceOfPlayState::Acting => {
-                sop = sop.acting();
             }
             SequenceOfPlayState::ResetEligibility => {
                 sop = sop.reset_eligibility();
