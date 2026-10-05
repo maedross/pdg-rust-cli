@@ -3,6 +3,8 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::{self};
 use tracing::{Level, event};
 
+use crate::commands::issue_command;
+
 use super::board::{Board, Imperium};
 use super::commands::{get_faction_commands};
 use super::concepts::Player;
@@ -20,18 +22,10 @@ enum ActionSelectionState {
 #[derive(Clone, Debug)]
 pub enum Action {
     Command {
-        name: &'static str,
-        action: fn(&mut Board, bool, bool) -> bool,
-    },
-    CommandSpace {
-        name: String,
-        action: fn(&'static str, &mut Board),
-    },
-    Feat {
-        name: &'static str,
+        command_name: &'static str,
         action: fn(&mut Board),
     },
-    FeatSpace {
+    Feat {
         name: &'static str,
         action: fn(&mut Board),
     },
@@ -46,10 +40,8 @@ pub enum Action {
 impl fmt::Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Action::Command { name, action: _ } => write!(f, "{}", name),
-            Action::CommandSpace { name, action: _ } => write!(f, "{}", name),
+            Action::Command { command_name, action: _ } => write!(f, "{}", command_name),
             Action::Feat { name, action: _ } => write!(f, "{}", name),
-            Action::FeatSpace { name, action: _ } => write!(f, "{}", name),
             Action::Pass { action: _ } => write!(f, "Pass"),
             Action::Event { name } => write!(f, "{}", name),
             Action::Done => write!(f, "Done"),
@@ -225,9 +217,9 @@ impl SequenceOfPlay {
                 println!("Selected {}", selection);
 
                 match selection {
-                    Action::Command { name: _, action } => match self.action_selection_state {
+                    Action::Command { command_name: _, action } => match self.action_selection_state {
                         ActionSelectionState::FirstSeeking => {
-                            let command_took_feat: bool = (action)(&mut self.board, false, true);
+                            let command_took_feat: bool = issue_command(selection, &mut self.board, false, true);
                             if command_took_feat {
                                 self.action_selection_state = ActionSelectionState::TookFeat;
                             } else {
@@ -236,17 +228,17 @@ impl SequenceOfPlay {
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }
                         ActionSelectionState::TookNeither => {
-                            let _ = (action)(&mut self.board, true, false);
+                            let _ = issue_command(selection, &mut self.board, false, true);
                             self.action_selection_state = ActionSelectionState::End;
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }
                         ActionSelectionState::TookFeat => {
-                            let _ = (action)(&mut self.board, true, false);
+                            let _ = issue_command(selection, &mut self.board, false, true);
                             self.action_selection_state = ActionSelectionState::End;
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }
                         ActionSelectionState::TookEvent => {
-                            let _ = (action)(&mut self.board, false, true);
+                            let _ = issue_command(selection, &mut self.board, false, true);
                             self.action_selection_state = ActionSelectionState::End;
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }

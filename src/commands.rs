@@ -13,7 +13,7 @@ use tracing::{Level, event, instrument};
 #[derive(Clone, Debug)]
 pub struct Command {
     name: String,
-    pub action: fn(&mut Board, bool, bool) -> bool,
+    pub action: fn(&mut Board, bool, bool),
 }
 
 impl fmt::Display for Command {
@@ -31,71 +31,82 @@ pub fn get_faction_commands(player: Player) -> Vec<Action> {
     }
 }
 
+enum EXPCommand {
+    Muster,
+    March,
+    Trade,
+    Battle,
+    Train,
+    Intercept,
+    Raid,
+    Return,
+}
+
 const MUSTER: Action = Action::Command {
-    name: "Muster",
+    command_name: "Muster",
     action: muster,
 };
 const MARCH_CIVITATES: Action = Action::Command {
-    name: "March",
+    command_name: "March",
     action: civitates_march,
 };
 const TRADE: Action = Action::Command {
-    name: "Trade",
+    command_name: "Trade",
     action: trade,
 };
 const BATTLE_CIVITATES: Action = Action::Command {
-    name: "Battle",
+    command_name: "Battle",
     action: civitates_battle,
 };
 
 const TRAIN: Action = Action::Command {
-    name: "Train",
+    command_name: "Train",
     action: train,
 };
 const MARCH_DUX: Action = Action::Command {
-    name: "March",
+    command_name: "March",
     action: dux_march,
 };
 const INTERCEPT: Action = Action::Command {
-    name: "Intercept",
+    command_name: "Intercept",
     action: intercept,
 };
 const BATTLE_DUX: Action = Action::Command {
-    name: "Battle",
+    command_name: "Battle",
     action: dux_battle,
 };
 
 const RAID_SAXONS: Action = Action::Command {
-    name: "Raid",
+    command_name: "Raid",
     action: saxon_raid,
 };
 const RETURN_SAXONS: Action = Action::Command {
-    name: "Return",
+    command_name: "Return",
     action: saxon_return,
 };
 const MARCH_SAXONS: Action = Action::Command {
-    name: "March",
+    command_name: "March",
     action: saxon_march,
 };
 const BATTLE_SAXONS: Action = Action::Command {
-    name: "Battle",
+    command_name: "Battle",
     action: saxon_battle,
 };
 
 const RAID_SCOTTI: Action = Action::Command {
-    name: "Raid",
+    command_name: "Raid",
     action: scotti_raid,
 };
 const RETURN_SCOTTI: Action = Action::Command {
-    name: "Return",
+    command_name: "Return",
     action: scotti_return,
 };
 const MARCH_SCOTTI: Action = Action::Command {
-    name: "March",
+    command_name: "March",
     action: scotti_march,
 };
 const BATTLE_SCOTTI: Action = Action::Command {
-    name: "Battle",
+    command_name: "Battle",
     action: scotti_battle,
 };
 /*
@@ -145,134 +156,137 @@ const BATTLE_SCOTTI: Action = Action::Command {
 // Feat per space modifies board state
 // Pass modifies board state
 // All these board state modifiers could end up returning the board state, especially when we shift to tracking histories
-fn muster(board: &mut Board, limited: bool, feat_allowed: bool) -> bool {
-    /*
-        Display list of spaces with Civitates pieces
-        Also display Feat options if Feat
-        Select one
-        If muster space, give option for placing troops or strongholds
-            If troops, calculate and display how many troops would be placed
-                If Comitates in Available AND Wealth > 0, ask to place 0..N Comitates instead of Militia
-                If not enough Militia or Comitates in Available, query voluntary replacement until rejected or done
-            If strongholds
-                If could place Town
-        If Feat return true
-    */
-    let mut action_options: Vec<Action>;
-    let mut executed_command: bool = false;
-    let mut executed_feat: bool = false;
+fn muster(board: &mut Board) {
+  
+}
 
-    // Preload action options and prompt
-    let prompt: &str;
-    if feat_allowed {
-        if board.imperium == Imperium::Fragmentation {
-            action_options = vec![RULE];
-        } else {
-            action_options = vec![RULE, INVITE_CIVITATTES];
-        }
-        prompt = "Select a Feat or a space in which to Muster"
-    } else {
-        action_options = vec![];
-        prompt = "Select a space in which to Muster"
-    }
-    for space in board.map.land.keys() {
-        action_options.push(Action::CommandSpace { name: space.clone(), action: muster_space });
-    }
+pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_allowed: bool) -> bool {
+    match command {
+        Action::Command { command_name, action } => {
+            let mut action_options: Vec<Action>;
+            let mut executed_command: bool = false;
+            let mut executed_feat: bool = false;
 
-    loop {
-        let selection_ind: usize = Select::new()
-            .with_prompt(prompt)
-            .items(&action_options)
-            .interact()
-            .unwrap();
-        let selection: &Action = &action_options[selection_ind];
-        match selection {
-            Action::CommandSpace { name, action } => {
-                println!("Mustering in {}", name);
-                action_options.remove(selection_ind);
-                if !executed_command {
-                    let mut new_action_options: Vec<Action> = vec![Action::Done];
-                    new_action_options.append(&mut action_options);
-                    action_options = new_action_options;
-                    executed_command = true;
+            let prompt: String;
+            // Replace with function fetching appropriate feats
+            if feat_allowed {
+                if board.imperium == Imperium::Fragmentation {
+                    action_options = vec![RULE];
+                } else {
+                    action_options = vec![RULE, INVITE_CIVITATTES];
                 }
-            },
-            Action::Feat { name, action } => {
-                println!("Performing Feat {}", name);
-                action_options.retain(|a| match a {
-                    Action::Feat { name: _, action: _ } => false,
-                    _ => true,
+                prompt = format!("Select a Feat or a space in which to {}", command_name);
+            } else {
+                action_options = vec![];
+                prompt = format!("Select a space in which to {}", command_name);
+            }
+            for space in board.map.land.keys() {
+                action_options.push(Action::Command {
+                    space_name: space.clone(),
+                    action: muster, // TODO: Rework to action. Do I actually need the Command/CommandSpace distinction?
                 });
-                executed_feat = true;
-            },
-            Action::Done => break,
-            _ => panic!("Illegal selection {}", selection),
+            }
+
+            loop {
+                let selection_ind: usize = Select::new()
+                    .with_prompt(prompt)
+                    .items(&action_options)
+                    .interact()
+                    .unwrap();
+                let selection: &Action = &action_options[selection_ind];
+                match selection {
+                    Action::Command { command_name, action } => {
+                        println!("{}ing in {}", command_name, space_name);
+                        action_options.remove(selection_ind);
+                        if !executed_command {
+                            let mut new_action_options: Vec<Action> = vec![Action::Done];
+                            new_action_options.append(&mut action_options);
+                            action_options = new_action_options;
+                            executed_command = true;
+                        }
+                        if limited {
+                            break;
+                        }
+                    }
+                    Action::Feat { name, action } => {
+                        println!("Performing Feat {}", name);
+                        action_options.retain(|a| match a {
+                            Action::Feat { name: _, action: _ } => false,
+                            _ => true,
+                        });
+                        executed_feat = true;
+                    }
+                    Action::Done => break,
+                    _ => panic!("Illegal selection {}", selection),
+                }
+            }
+            return executed_feat;
         }
+        _ => panic!("Running a Command with a non-Command: {}", command),
     }
-    return executed_feat;
 }
 
 fn muster_space(space: &str, board: &mut Board) {
     println!("TODO: Execute Muster in space {}", space);
 }
 
-fn civitates_march(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn civitates_march(board: &mut Board) {
     todo!()
 }
 
-fn trade(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn trade(board: &mut Board) {
     todo!()
 }
 
-fn civitates_battle(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn civitates_battle(board: &mut Board) {
     todo!()
 }
 
-fn train(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn train(board: &mut Board) {
     todo!()
 }
 
-fn dux_march(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn dux_march(board: &mut Board) {
     todo!()
 }
 
-fn intercept(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn intercept(board: &mut Board) {
     todo!()
 }
 
-fn dux_battle(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn dux_battle(board: &mut Board) {
     todo!()
 }
 
-fn saxon_raid(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn saxon_raid(board: &mut Board) {
     todo!()
 }
 
-fn saxon_return(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn saxon_return(board: &mut Board) {
     todo!()
 }
 
-fn saxon_march(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn saxon_march(board: &mut Board) {
     todo!()
 }
 
-fn saxon_battle(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn saxon_battle(board: &mut Board) {
     todo!()
 }
 
-fn scotti_raid(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn scotti_raid(board: &mut Board) {
     todo!()
 }
 
-fn scotti_return(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn scotti_return(board: &mut Board) {
     todo!()
 }
 
-fn scotti_march(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn scotti_march(board: &mut Board) {
     todo!()
 }
 
-fn scotti_battle(board: &mut Board, limited: bool, feat: bool) -> bool {
+fn scotti_battle(board: &mut Board) {
     todo!()
 }
 
