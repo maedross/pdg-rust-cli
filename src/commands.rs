@@ -1,5 +1,5 @@
 use crate::board::{Available, Imperium};
-use crate::feats::{INVITE_CIVITATTES, RULE};
+use crate::feats::{get_feats};
 use crate::sequence_of_play::Action;
 
 use super::board::{Board, Space};
@@ -10,18 +10,6 @@ use tracing::{Level, event, instrument};
 
 //TODO could commands and feats be YAMLs? Would that be worth it or just suffering?
 
-#[derive(Clone, Debug)]
-pub struct Command {
-    name: String,
-    pub action: fn(&mut Board, bool, bool),
-}
-
-impl fmt::Display for Command {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
-    }
-}
-
 pub fn get_faction_commands(player: Player) -> Vec<Action> {
     match player {
         Player::Civitates => vec![MUSTER, MARCH_CIVITATES, TRADE, BATTLE_CIVITATES],
@@ -31,82 +19,122 @@ pub fn get_faction_commands(player: Player) -> Vec<Action> {
     }
 }
 
-enum EXPCommand {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Command {
     Muster,
-    March,
+    CivitatesMarch,
     Trade,
-    Battle,
+    CivitatesBattle,
     Train,
+    DuxMarch,
     Intercept,
-    Raid,
-    Return,
+    DuxBattle,
+    SaxonRaid,
+    SaxonReturn,
+    SaxonMarch,
+    SaxonBattle,
+    ScottiRaid,
+    ScottiReturn,
+    ScottiMarch,
+    ScottiBattle,
+}
+
+impl fmt::Display for Command {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Command::Muster => write!(f, "Muster"),
+            Command::CivitatesMarch | Command::DuxMarch | Command::SaxonMarch | Command::ScottiMarch => write!(f, "March"),
+            Command::Trade => write!(f, "Trade"),
+            Command::CivitatesBattle | Command::DuxBattle | Command::SaxonBattle | Command::ScottiBattle => write!(f, "Battle"),
+            Command::Train => write!(f, "Train"),
+            Command::Intercept => write!(f, "Intercept"),
+            Command::SaxonRaid | Command::ScottiRaid => write!(f, "Raid"),
+            Command::SaxonReturn | Command::ScottiReturn => write!(f, "Return"),
+        }
+    }
 }
 
 const MUSTER: Action = Action::Command {
-    command_name: "Muster",
+    command_name: Command::Muster,
+    space: None,
     action: muster,
 };
 const MARCH_CIVITATES: Action = Action::Command {
-    command_name: "March",
+    command_name: Command::CivitatesMarch,
+    space: None,
     action: civitates_march,
 };
 const TRADE: Action = Action::Command {
-    command_name: "Trade",
+    command_name: Command::Trade,
+    space: None,
     action: trade,
 };
 const BATTLE_CIVITATES: Action = Action::Command {
-    command_name: "Battle",
+    command_name: Command::CivitatesBattle,
+    space: None,
     action: civitates_battle,
 };
 
 const TRAIN: Action = Action::Command {
-    command_name: "Train",
+    command_name: Command::Train,
+    space: None,
     action: train,
 };
 const MARCH_DUX: Action = Action::Command {
-    command_name: "March",
+    command_name: Command::DuxMarch,
+    space: None,
     action: dux_march,
 };
 const INTERCEPT: Action = Action::Command {
-    command_name: "Intercept",
+    command_name: Command::Intercept,
+    space: None,
     action: intercept,
 };
 const BATTLE_DUX: Action = Action::Command {
-    command_name: "Battle",
+    command_name: Command::DuxBattle,
+    space: None,
     action: dux_battle,
 };
 
 const RAID_SAXONS: Action = Action::Command {
-    command_name: "Raid",
+    command_name: Command::SaxonRaid,
+    space: None,
     action: saxon_raid,
 };
 const RETURN_SAXONS: Action = Action::Command {
-    command_name: "Return",
+    command_name: Command::SaxonReturn,
+    space: None,
     action: saxon_return,
 };
 const MARCH_SAXONS: Action = Action::Command {
-    command_name: "March",
+    command_name: Command::SaxonMarch,
+    space: None,
     action: saxon_march,
 };
 const BATTLE_SAXONS: Action = Action::Command {
-    command_name: "Battle",
+    command_name: Command::SaxonBattle,
+    space: None,
     action: saxon_battle,
 };
 
 const RAID_SCOTTI: Action = Action::Command {
-    command_name: "Raid",
+    command_name: Command::ScottiRaid,
+    space: None,
     action: scotti_raid,
 };
 const RETURN_SCOTTI: Action = Action::Command {
-    command_name: "Return",
+    command_name: Command::ScottiReturn,
+    space: None,
     action: scotti_return,
 };
 const MARCH_SCOTTI: Action = Action::Command {
-    command_name: "March",
+    command_name: Command::ScottiMarch,
+    space: None,
     action: scotti_march,
 };
 const BATTLE_SCOTTI: Action = Action::Command {
-    command_name: "Battle",
+    command_name: Command::ScottiBattle,
+    space: None,
     action: scotti_battle,
 };
 /*
@@ -142,27 +170,16 @@ const BATTLE_SCOTTI: Action = Action::Command {
     spaces will always be the same type. Can reduce later.
 */
 
-// TODO: if doing recursion, need to pass in our shrinking list while keeping track of feats as well
-// If not recursion, might still need to
-// TODO: what would be really nice is to have actions be some sort of type whose name is displayed and have a function stored that can be called,
-// so I don't have to do weird index arithmetic and tracking. Feats and Commands both. Feats in general and feats-per-space... sorta like how commands
-// currently are. Hm. Do I smell an enum?
-// So I need an enum handling Command, Command-per-space, Feat, and Feat-per-space? Should also probably handle Pass and Event
-// Do these even need to be different enum values? Could they all be one Action struct? They behave the same way
-// They might because they might contain different types of functions.
-// Command returns a bool and modifies board state - could modify sequence of play state instead of returning, but would require extra arg (sop)
-// Feat modifies board state
-// Command per space modifies board state
-// Feat per space modifies board state
-// Pass modifies board state
-// All these board state modifiers could end up returning the board state, especially when we shift to tracking histories
 fn muster(board: &mut Board) {
-  
+    println!("Mustering");
 }
 
+// TODO: handle space limits (Raid)
+// TODO: Can Raid and other Commands be selected emptily?
+// TODO: Should in fact be using filters on spaces
 pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_allowed: bool) -> bool {
     match command {
-        Action::Command { command_name, action } => {
+        Action::Command { command_name, space: _, action } => {
             let mut action_options: Vec<Action>;
             let mut executed_command: bool = false;
             let mut executed_feat: bool = false;
@@ -170,11 +187,7 @@ pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_all
             let prompt: String;
             // Replace with function fetching appropriate feats
             if feat_allowed {
-                if board.imperium == Imperium::Fragmentation {
-                    action_options = vec![RULE];
-                } else {
-                    action_options = vec![RULE, INVITE_CIVITATTES];
-                }
+                action_options = get_feats(command_name, board.imperium);
                 prompt = format!("Select a Feat or a space in which to {}", command_name);
             } else {
                 action_options = vec![];
@@ -182,21 +195,23 @@ pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_all
             }
             for space in board.map.land.keys() {
                 action_options.push(Action::Command {
-                    space_name: space.clone(),
-                    action: muster, // TODO: Rework to action. Do I actually need the Command/CommandSpace distinction?
+                    command_name,
+                    space: Some(space.clone()),
+                    action: action,
                 });
             }
 
             loop {
                 let selection_ind: usize = Select::new()
-                    .with_prompt(prompt)
+                    .with_prompt(&prompt)
                     .items(&action_options)
                     .interact()
                     .unwrap();
                 let selection: &Action = &action_options[selection_ind];
                 match selection {
-                    Action::Command { command_name, action } => {
-                        println!("{}ing in {}", command_name, space_name);
+                    Action::Command { command_name, space, action } => {
+                        println!("{}ing in {}", command_name, space.as_ref().unwrap());
+                        (action)(board);
                         action_options.remove(selection_ind);
                         if !executed_command {
                             let mut new_action_options: Vec<Action> = vec![Action::Done];
@@ -222,72 +237,68 @@ pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_all
             }
             return executed_feat;
         }
-        _ => panic!("Running a Command with a non-Command: {}", command),
+        _ => panic!("Running a Command with a non-Command: {:?}", command),
     }
 }
 
-fn muster_space(space: &str, board: &mut Board) {
-    println!("TODO: Execute Muster in space {}", space);
-}
-
 fn civitates_march(board: &mut Board) {
-    todo!()
+    println!("Civitates Marching");
 }
 
 fn trade(board: &mut Board) {
-    todo!()
+    println!("Trading");
 }
 
 fn civitates_battle(board: &mut Board) {
-    todo!()
+    println!("Civitates Battling");
 }
 
 fn train(board: &mut Board) {
-    todo!()
+    println!("Training")
 }
 
 fn dux_march(board: &mut Board) {
-    todo!()
+    println!("Dux Marching");
 }
 
 fn intercept(board: &mut Board) {
-    todo!()
+    println!("Intercepting")
 }
 
 fn dux_battle(board: &mut Board) {
-    todo!()
+    println!("Dux Battling");
 }
 
 fn saxon_raid(board: &mut Board) {
-    todo!()
+    println!("Saxons Raiding");
 }
 
 fn saxon_return(board: &mut Board) {
-    todo!()
+    println!("Saxons Returning");
 }
 
 fn saxon_march(board: &mut Board) {
-    todo!()
+    println!("Saxons Marching");
 }
 
 fn saxon_battle(board: &mut Board) {
-    todo!()
+    println!("Saxons Battling");
 }
 
 fn scotti_raid(board: &mut Board) {
-    todo!()
+    println!("Scotti Raiding");
 }
 
 fn scotti_return(board: &mut Board) {
-    todo!()
+    println!("Scotti Returning");
 }
 
 fn scotti_march(board: &mut Board) {
-    todo!()
+    println!("Scotti Marching");
 }
 
 fn scotti_battle(board: &mut Board) {
-    todo!()
+    println!("Scotti Battling");
 }
 
 // TODO: Check available when adding units

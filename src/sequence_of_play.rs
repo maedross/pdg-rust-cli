@@ -6,7 +6,7 @@ use tracing::{Level, event};
 use crate::commands::issue_command;
 
 use super::board::{Board, Imperium};
-use super::commands::{get_faction_commands};
+use super::commands::{Command, get_faction_commands};
 use super::concepts::Player;
 use super::events::{Event, EventType};
 
@@ -22,7 +22,8 @@ enum ActionSelectionState {
 #[derive(Clone, Debug)]
 pub enum Action {
     Command {
-        command_name: &'static str,
+        command_name: Command,
+        space: Option<String>,
         action: fn(&mut Board),
     },
     Feat {
@@ -40,7 +41,12 @@ pub enum Action {
 impl fmt::Display for Action {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Action::Command { command_name, action: _ } => write!(f, "{}", command_name),
+            Action::Command { command_name, space, action: _ } => {
+                match space {
+                    Some(s) => write!(f, "{}", s),
+                    None => write!(f, "{}", command_name)
+                }
+            },
             Action::Feat { name, action: _ } => write!(f, "{}", name),
             Action::Pass { action: _ } => write!(f, "Pass"),
             Action::Event { name } => write!(f, "{}", name),
@@ -217,7 +223,7 @@ impl SequenceOfPlay {
                 println!("Selected {}", selection);
 
                 match selection {
-                    Action::Command { command_name: _, action } => match self.action_selection_state {
+                    Action::Command { command_name: _, space: _, action: _ } => match self.action_selection_state {
                         ActionSelectionState::FirstSeeking => {
                             let command_took_feat: bool = issue_command(selection, &mut self.board, false, true);
                             if command_took_feat {
@@ -228,12 +234,12 @@ impl SequenceOfPlay {
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }
                         ActionSelectionState::TookNeither => {
-                            let _ = issue_command(selection, &mut self.board, false, true);
+                            let _ = issue_command(selection, &mut self.board, true, false);
                             self.action_selection_state = ActionSelectionState::End;
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }
                         ActionSelectionState::TookFeat => {
-                            let _ = issue_command(selection, &mut self.board, false, true);
+                            let _ = issue_command(selection, &mut self.board, true, false);
                             self.action_selection_state = ActionSelectionState::End;
                             self.player_eligibilities.insert(player, PlayerState::Acted);
                         }

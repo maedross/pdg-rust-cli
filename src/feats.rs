@@ -4,40 +4,42 @@ use super::concepts::{Player};
 use super::sequence_of_play::{Action};
 use std::fmt;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Feat {
-    Build,
-    Invite,
-    Requisition,
-    Retaliate,
-    Rule,
-    Reinforce,
-    Pillage,
-    Settle,
-    Surprise,
-    Ravage,
-    ShieldWall,
-    Ransom,
-    Entreat,
-}
-
-impl fmt::Display for Feat {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Feat::Build => write!(f, "Build"),
-            Feat::Invite => write!(f, "Invite"),
-            Feat::Requisition => write!(f, "Requisition"),
-            Feat::Retaliate => write!(f, "Retaliate"),
-            Feat::Rule => write!(f, "Rule"),
-            Feat::Reinforce => write!(f, "Reinforce"),
-            Feat::Pillage => write!(f, "Pillage"),
-            Feat::Settle => write!(f, "Settle"),
-            Feat::Surprise => write!(f, "Surprise"),
-            Feat::Ravage => write!(f, "Ravage"),
-            Feat::ShieldWall => write!(f, "ShieldWall"),
-            Feat::Ransom => write!(f, "Ransom"),
-            Feat::Entreat => write!(f, "Entreat"),
-        }
+pub fn get_feats(command: Command, imperium: Imperium) -> Vec<Action> {
+    match command {
+        Command::Muster => match imperium {
+            Imperium::Fragmentation => vec![RULE],
+            _ => vec![RULE, INVITE_CIVITATTES],
+        },
+        Command::CivitatesMarch => match imperium {
+            Imperium::Fragmentation => vec![RULE, PILLAGE],
+            _ => vec![RULE, INVITE_CIVITATTES, PILLAGE],
+        },
+        Command::Trade => match imperium {
+            Imperium::Fragmentation => vec![RULE],
+            _ => vec![RULE, INVITE_CIVITATTES],
+        },
+        Command::CivitatesBattle => vec![REINFORCE, PILLAGE],
+        Command::Train => match imperium {
+            Imperium::Fragmentation => vec![BUILD, REQUISITION],
+            _ => vec![BUILD, INVITE_DUX, REQUISITION],
+        },
+        Command::DuxMarch => match imperium {
+            Imperium::Fragmentation => vec![BUILD, REQUISITION],
+            _ => vec![BUILD, INVITE_DUX, REQUISITION],
+        },
+        Command::Intercept => match  imperium {
+            Imperium::Fragmentation => vec![RETALIATE],
+            _ => vec![INVITE_DUX, RETALIATE],
+        },
+        Command::DuxBattle => vec![REQUISITION, RETALIATE],
+        Command::SaxonRaid => vec![SURPRISE_SAXONS, RAVAGE],
+        Command::SaxonReturn => vec![SETTLE_SAXONS],
+        Command::SaxonMarch => vec![SETTLE_SAXONS],
+        Command::SaxonBattle => vec![SURPRISE_SAXONS, RAVAGE, SHIELDWALL],
+        Command::ScottiRaid => vec![SURPRISE_SCOTTI, RANSOM],
+        Command::ScottiReturn => vec![SETTLE_SCOTTI, ENTREAT],
+        Command::ScottiMarch => vec![SETTLE_SCOTTI],
+        Command::ScottiBattle => vec![SURPRISE_SCOTTI, RANSOM, ENTREAT],
     }
 }
 
