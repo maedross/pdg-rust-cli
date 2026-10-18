@@ -236,6 +236,9 @@ impl FromStr for Terrain {
     }
 }
 
+// TODO: Combine bool filters into single get function
+// TODO: Enable filters to take Vecs of options
+// TODO: Enum for force to allow single function for unit and stronghold lookup
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Space {
     pub id: String,
@@ -330,16 +333,6 @@ impl<'a> Space {
         })
     }
 
-    pub fn contains_stronghold_controller(&self, player: Player) -> bool {
-        return self
-            .stronghold_sites
-            .values()
-            .any(|site: &StrongholdSite| match site.stronghold {
-                Some(s) => s.controller == player,
-                _ => false,
-            });
-    }
-
     pub fn contains_unit(
         &self,
         class: Option<UnitClass>,
@@ -371,7 +364,7 @@ impl<'a> Space {
         return result;
     }
 
-    fn amt_units(
+    pub fn amt_units(
         &self,
         class: Option<UnitClass>,
         controller: Option<Player>,
@@ -401,6 +394,43 @@ impl<'a> Space {
             None => {}
         };
         return units.len() as u8;
+    }
+
+    pub fn amt_strongholds(
+        &self,
+        class: Option<StrongholdClass>,
+        controller: Option<Player>,
+        nationality: Option<Nationality>,
+    ) -> u8 {
+        let mut strongholds: Vec<Stronghold> = self
+            .stronghold_sites
+            .values()
+            .into_iter()
+            .filter_map(|site| site.stronghold.clone())
+            .collect();
+        match class {
+            Some(c) => strongholds = strongholds.into_iter().filter(|s| s.class == c).collect(),
+            None => {}
+        };
+        match controller {
+            Some(c) => {
+                strongholds = strongholds
+                    .into_iter()
+                    .filter(|s| s.controller == c)
+                    .collect()
+            }
+            None => {}
+        };
+        match nationality {
+            Some(n) => {
+                strongholds = strongholds
+                    .into_iter()
+                    .filter(|s| s.nationality == Some(n))
+                    .collect()
+            }
+            None => {}
+        };
+        return strongholds.len() as u8;
     }
 
     pub fn add_units(mut self, unit: Unit, amt: u8, board: &mut Board) -> Space {

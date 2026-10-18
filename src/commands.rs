@@ -1,10 +1,9 @@
 use colored::Colorize;
 
-
-use crate::board::{Board, Imperium};
-use crate::concepts::{Player, StrongholdClass};
-use crate::feats::get_feats;
 use crate::action::Action;
+use crate::board::{Board, Imperium, Space, StrongholdSiteType};
+use crate::concepts::{Player, StrongholdClass, UnitClass};
+use crate::feats::get_feats;
 
 use dialoguer::{MultiSelect, Select};
 use std::fmt;
@@ -364,16 +363,22 @@ pub fn issue_command(
                         match selection {
                             Action::Feat { name: _, action: _ } => {
                                 selected_feat = Some(selection.clone());
-                                println!("DEBUG: selected_feat is {:?} from command first pick", selected_feat);
+                                println!(
+                                    "DEBUG: selected_feat is {:?} from command first pick",
+                                    selected_feat
+                                );
                                 feat_spaces = select_action_spaces(selected_action, limited, board);
                             }
                             Action::Done => {}
                             _ => panic!(),
                         }
-                    },
+                    }
                     Action::Feat { name: _, action: _ } => {
                         selected_feat = Some(selected_action.clone());
-                        println!("DEBUG: selected_feat is {:?} from feat first pick", selected_feat);
+                        println!(
+                            "DEBUG: selected_feat is {:?} from feat first pick",
+                            selected_feat
+                        );
                         feat_spaces = select_action_spaces(selected_action, limited, board);
                         command_spaces = select_action_spaces(command, limited, board);
                     }
@@ -475,17 +480,74 @@ pub fn select_action_spaces(action: Action, limited: bool, board: &mut Board) ->
             println!("FEATS NOT YET IMPLEMENTED");
             println!("Returning no spaces for {}", name);
             vec![]
-        },
+        }
         _ => panic!(),
     }
 }
 
-fn muster(space: String, board: &mut Board) {
-    println!("{}Mustering in {}", "UNIMPLEMENTED: ".yellow(), space);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum MusterVariants {
+    Troops,
+    Strongholds,
 }
 
+impl fmt::Display for MusterVariants {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MusterVariants::Troops => write!(f, "Add Troops"),
+            MusterVariants::Strongholds => write!(f, "Add Strongholds"),
+        }
+    }
+}
+
+fn muster(space: String, board: &mut Board) {
+    let s: &Space = board.map.land.get(&space).unwrap();
+    let mut friendly_pieces: u8 = s.amt_units(None, Some(Player::Civitates), None, None)
+        + s.amt_strongholds(None, Some(Player::Civitates), None);
+    let barbarian_pieces = s.amt_units(None, Some(Player::Saxons), None, None)
+        + s.amt_units(None, Some(Player::Scotti), None, None)
+        + s.amt_strongholds(None, Some(Player::Saxons), None)
+        + s.amt_strongholds(None, Some(Player::Scotti), None);
+    if board.imperium != Imperium::Fragmentation {
+        friendly_pieces += s.amt_units(None, Some(Player::Dux), None, None)
+            + s.amt_strongholds(None, Some(Player::Dux), None);
+    }
+    let can_place_hillfort: bool = friendly_pieces > barbarian_pieces
+        && s.contains_empty_site(None)
+        && s.contains_unit(Some(UnitClass::Militia), None, None, None);
+    let can_place_town: bool = friendly_pieces > barbarian_pieces
+        && (s.contains_empty_site(Some(StrongholdSiteType::Town))
+            || s.contains_empty_site(Some(StrongholdSiteType::City)))
+        && s.amt_units(Some(UnitClass::Militia), None, None, None) >= 2
+        && board.edge_track.wealth >= 2;
+
+    if can_place_hillfort || can_place_town {
+        let muster_items = vec![MusterVariants::Troops, MusterVariants::Strongholds];
+        let muster_selection = muster_items[Select::new().with_prompt("Select a Muster option:").items(&muster_items).interact().unwrap()];
+        match muster_selection {
+            MusterVariants::Troops => muster_troops(space, board),
+            MusterVariants::Strongholds => muster_strongholds(space, board),
+        }
+    } else {
+        muster_troops(space, board);
+    }
+}
+
+fn muster_troops(space: String, board: &mut Board) {
+    println!("{}Mustering Troops in {}", "UNIMPLEMENTED: ".yellow(), space);
+}
+
+fn muster_strongholds(space: String, board: &mut Board) {
+    println!("{}Mustering Strongholds in {}", "UNIMPLEMENTED: ".yellow(), space);
+}
+
+
 fn civitates_march(space: String, board: &mut Board) {
-    println!("{}Civitates Marching in {}", "UNIMPLEMENTED: ".yellow(), space);
+    println!(
+        "{}Civitates Marching in {}",
+        "UNIMPLEMENTED: ".yellow(),
+        space
+    );
 }
 
 fn trade(space: String, board: &mut Board) {
@@ -493,7 +555,11 @@ fn trade(space: String, board: &mut Board) {
 }
 
 fn civitates_battle(space: String, board: &mut Board) {
-    println!("{}Civitates Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
+    println!(
+        "{}Civitates Battling in {}",
+        "UNIMPLEMENTED: ".yellow(),
+        space
+    );
 }
 
 fn train(space: String, board: &mut Board) {
@@ -517,7 +583,11 @@ fn saxon_raid(space: String, board: &mut Board) {
 }
 
 fn saxon_return(space: String, board: &mut Board) {
-    println!("{}Saxons Returning in {}", "UNIMPLEMENTED: ".yellow(), space);
+    println!(
+        "{}Saxons Returning in {}",
+        "UNIMPLEMENTED: ".yellow(),
+        space
+    );
 }
 
 fn saxon_march(space: String, board: &mut Board) {
@@ -533,7 +603,11 @@ fn scotti_raid(space: String, board: &mut Board) {
 }
 
 fn scotti_return(space: String, board: &mut Board) {
-    println!("{}Scotti Returning in {}", "UNIMPLEMENTED: ".yellow(), space);
+    println!(
+        "{}Scotti Returning in {}",
+        "UNIMPLEMENTED: ".yellow(),
+        space
+    );
 }
 
 fn scotti_march(space: String, board: &mut Board) {
@@ -543,7 +617,6 @@ fn scotti_march(space: String, board: &mut Board) {
 fn scotti_battle(space: String, board: &mut Board) {
     println!("{}Scotti Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
-
 
 /*
 #[cfg(test)]
