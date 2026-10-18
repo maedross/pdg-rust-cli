@@ -156,7 +156,12 @@ impl Board {
     }
 
     pub fn filter_spaces_empty_site(&self, site_type: Option<StrongholdSiteType>) -> Vec<String> {
-        self.map.land.values().filter(|s| s.contains_empty_site(site_type)).map(|s| s.id.clone()).collect::<Vec<String>>()
+        self.map
+            .land
+            .values()
+            .filter(|s| s.contains_empty_site(site_type))
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
     }
 
     pub fn filter_spaces_pieces(
@@ -171,6 +176,15 @@ impl Board {
                 s.contains_unit(None, controller, nationality, None)
                     || s.contains_stronghold(None, controller, nationality)
             })
+            .map(|s| s.id.clone())
+            .collect::<Vec<String>>()
+    }
+
+    pub fn filter_spaces_control(&self, controller: Option<Player>) -> Vec<String> {
+        self.map
+            .land
+            .values()
+            .filter(|s| s.control == controller)
             .map(|s| s.id.clone())
             .collect::<Vec<String>>()
     }
@@ -312,7 +326,7 @@ impl<'a> Space {
             None => match &site_type {
                 Some(t) => &s.site_type == t,
                 None => true,
-            }
+            },
         })
     }
 

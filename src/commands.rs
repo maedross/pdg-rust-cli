@@ -1,21 +1,43 @@
-use crate::board::{Available, Imperium};
-use crate::feats::{get_feats};
-use crate::sequence_of_play::Action;
+use colored::Colorize;
 
-use super::board::{Board, Space};
-use super::concepts::{Player, StrongholdClass};
-use dialoguer::{Input, Select};
+
+use crate::board::{Board, Imperium};
+use crate::concepts::{Player, StrongholdClass};
+use crate::feats::get_feats;
+use crate::action::Action;
+
+use dialoguer::{MultiSelect, Select};
 use std::fmt;
 use tracing::{Level, event, instrument};
 
 //TODO could commands and feats be YAMLs? Would that be worth it or just suffering?
 
-pub fn get_faction_commands(player: Player) -> Vec<Action> {
+pub fn get_faction_commands(player: Player) -> Vec<Command> {
     match player {
-        Player::Civitates => vec![MUSTER, MARCH_CIVITATES, TRADE, BATTLE_CIVITATES],
-        Player::Dux => vec![TRAIN, MARCH_DUX, INTERCEPT, BATTLE_DUX],
-        Player::Saxons => vec![RAID_SAXONS, RETURN_SAXONS, MARCH_SAXONS, BATTLE_SAXONS],
-        Player::Scotti => vec![RAID_SCOTTI, RETURN_SCOTTI, MARCH_SCOTTI, BATTLE_SCOTTI],
+        Player::Civitates => vec![
+            Command::Muster,
+            Command::CivitatesMarch,
+            Command::Trade,
+            Command::CivitatesBattle,
+        ],
+        Player::Dux => vec![
+            Command::Train,
+            Command::DuxMarch,
+            Command::Intercept,
+            Command::DuxBattle,
+        ],
+        Player::Saxons => vec![
+            Command::SaxonRaid,
+            Command::SaxonReturn,
+            Command::SaxonMarch,
+            Command::SaxonBattle,
+        ],
+        Player::Scotti => vec![
+            Command::ScottiRaid,
+            Command::ScottiReturn,
+            Command::ScottiMarch,
+            Command::ScottiBattle,
+        ],
     }
 }
 
@@ -43,9 +65,15 @@ impl fmt::Display for Command {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Command::Muster => write!(f, "Muster"),
-            Command::CivitatesMarch | Command::DuxMarch | Command::SaxonMarch | Command::ScottiMarch => write!(f, "March"),
+            Command::CivitatesMarch
+            | Command::DuxMarch
+            | Command::SaxonMarch
+            | Command::ScottiMarch => write!(f, "March"),
             Command::Trade => write!(f, "Trade"),
-            Command::CivitatesBattle | Command::DuxBattle | Command::SaxonBattle | Command::ScottiBattle => write!(f, "Battle"),
+            Command::CivitatesBattle
+            | Command::DuxBattle
+            | Command::SaxonBattle
+            | Command::ScottiBattle => write!(f, "Battle"),
             Command::Train => write!(f, "Train"),
             Command::Intercept => write!(f, "Intercept"),
             Command::SaxonRaid | Command::ScottiRaid => write!(f, "Raid"),
@@ -54,185 +82,357 @@ impl fmt::Display for Command {
     }
 }
 
-const MUSTER: Action = Action::Command {
-    command_name: Command::Muster,
-    space: None,
-    action: muster,
-};
-const MARCH_CIVITATES: Action = Action::Command {
-    command_name: Command::CivitatesMarch,
-    space: None,
-    action: civitates_march,
-};
-const TRADE: Action = Action::Command {
-    command_name: Command::Trade,
-    space: None,
-    action: trade,
-};
-const BATTLE_CIVITATES: Action = Action::Command {
-    command_name: Command::CivitatesBattle,
-    space: None,
-    action: civitates_battle,
-};
-
-const TRAIN: Action = Action::Command {
-    command_name: Command::Train,
-    space: None,
-    action: train,
-};
-const MARCH_DUX: Action = Action::Command {
-    command_name: Command::DuxMarch,
-    space: None,
-    action: dux_march,
-};
-const INTERCEPT: Action = Action::Command {
-    command_name: Command::Intercept,
-    space: None,
-    action: intercept,
-};
-const BATTLE_DUX: Action = Action::Command {
-    command_name: Command::DuxBattle,
-    space: None,
-    action: dux_battle,
-};
-
-const RAID_SAXONS: Action = Action::Command {
-    command_name: Command::SaxonRaid,
-    space: None,
-    action: saxon_raid,
-};
-const RETURN_SAXONS: Action = Action::Command {
-    command_name: Command::SaxonReturn,
-    space: None,
-    action: saxon_return,
-};
-const MARCH_SAXONS: Action = Action::Command {
-    command_name: Command::SaxonMarch,
-    space: None,
-    action: saxon_march,
-};
-const BATTLE_SAXONS: Action = Action::Command {
-    command_name: Command::SaxonBattle,
-    space: None,
-    action: saxon_battle,
-};
-
-const RAID_SCOTTI: Action = Action::Command {
-    command_name: Command::ScottiRaid,
-    space: None,
-    action: scotti_raid,
-};
-const RETURN_SCOTTI: Action = Action::Command {
-    command_name: Command::ScottiReturn,
-    space: None,
-    action: scotti_return,
-};
-const MARCH_SCOTTI: Action = Action::Command {
-    command_name: Command::ScottiMarch,
-    space: None,
-    action: scotti_march,
-};
-const BATTLE_SCOTTI: Action = Action::Command {
-    command_name: Command::ScottiBattle,
-    space: None,
-    action: scotti_battle,
-};
-/*
-    HOW COMMAND EXECUTION WORKS
-
-    Commands have a default Option<u8> number of spaces - None means unlimited
-    Limited sets that max to 1
-
-    Display all the spaces we can select to do a Command
-    These are spaces meeting target requirements that have not already been met
-
-    IF we are allowed a Feat
-        IF we have not already chosen one
-            Also display a list of all spaces we can do all Feats
-        Else we have already chosen one
-            If there are spaces remaining to perform it
-                Display those
-
-    Need to know:
-    * Where have we already executed Commands
-    * Where have we already executed Feats
-    * What Feat did we execute
-
-    Haskell patterning seems the way to go?
-
-    Input: board, limited, selected_command_spaces: Option<Vec>
-
-    Output: whether a feat was taken
-
-    Side effects: board transformation
-
-    For now can use Haskell architecture with function runner calling real function, because I am not immediately sure if selected
-    spaces will always be the same type. Can reduce later.
-*/
-
-fn muster(board: &mut Board) {
-    println!("Mustering");
+pub fn get_command(command: Command) -> Action {
+    match command {
+        Command::Muster => Action::Command {
+            command_name: Command::Muster,
+            space: None,
+            actions: vec![muster],
+            filter: muster_filter,
+        },
+        Command::CivitatesMarch => Action::Command {
+            command_name: Command::CivitatesMarch,
+            space: None,
+            actions: vec![civitates_march],
+            filter: civitates_march_filter,
+        },
+        Command::Trade => Action::Command {
+            command_name: Command::Trade,
+            space: None,
+            actions: vec![trade],
+            filter: trade_filter,
+        },
+        Command::CivitatesBattle => Action::Command {
+            command_name: Command::CivitatesBattle,
+            space: None,
+            actions: vec![civitates_battle],
+            filter: civitates_battle_filter,
+        },
+        Command::Train => Action::Command {
+            command_name: Command::Train,
+            space: None,
+            actions: vec![train],
+            filter: train_filter,
+        },
+        Command::DuxMarch => Action::Command {
+            command_name: Command::DuxMarch,
+            space: None,
+            actions: vec![dux_march],
+            filter: dux_march_filter,
+        },
+        Command::Intercept => Action::Command {
+            command_name: Command::Intercept,
+            space: None,
+            actions: vec![intercept],
+            filter: intercept_filter,
+        },
+        Command::DuxBattle => Action::Command {
+            command_name: Command::DuxBattle,
+            space: None,
+            actions: vec![dux_battle],
+            filter: dux_battle_filter,
+        },
+        Command::SaxonRaid => Action::Command {
+            command_name: Command::SaxonRaid,
+            space: None,
+            actions: vec![saxon_raid],
+            filter: saxon_raid_filter,
+        },
+        Command::SaxonReturn => Action::Command {
+            command_name: Command::SaxonReturn,
+            space: None,
+            actions: vec![saxon_return],
+            filter: saxon_return_filter,
+        },
+        Command::SaxonMarch => Action::Command {
+            command_name: Command::SaxonMarch,
+            space: None,
+            actions: vec![saxon_march],
+            filter: saxon_march_filter,
+        },
+        Command::SaxonBattle => Action::Command {
+            command_name: Command::SaxonBattle,
+            space: None,
+            actions: vec![saxon_battle],
+            filter: saxon_battle_filter,
+        },
+        Command::ScottiRaid => Action::Command {
+            command_name: Command::ScottiRaid,
+            space: None,
+            actions: vec![scotti_raid],
+            filter: scotti_raid_filter,
+        },
+        Command::ScottiReturn => Action::Command {
+            command_name: Command::ScottiReturn,
+            space: None,
+            actions: vec![scotti_return],
+            filter: scotti_return_filter,
+        },
+        Command::ScottiMarch => Action::Command {
+            command_name: Command::ScottiMarch,
+            space: None,
+            actions: vec![scotti_march],
+            filter: scotti_march_filter,
+        },
+        Command::ScottiBattle => Action::Command {
+            command_name: Command::ScottiBattle,
+            space: None,
+            actions: vec![scotti_battle],
+            filter: scotti_battle_filter,
+        },
+    }
 }
 
+fn combine_space_lists(spaces: &mut Vec<Vec<String>>) -> Vec<String> {
+    let mut s = vec![];
+    loop {
+        let new_s = spaces.pop();
+        match new_s {
+            Some(mut v) => {
+                s.append(&mut v);
+                s.sort();
+                s.dedup();
+            }
+            None => return s,
+        }
+    }
+}
+
+fn muster_filter(board: &mut Board) -> Vec<String> {
+    combine_space_lists(&mut vec![
+        board.filter_spaces_pieces(Some(Player::Civitates), None),
+        board.filter_spaces_stronghold(None, Some(Player::Civitates), None),
+    ])
+}
+
+fn civitates_march_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn trade_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn civitates_battle_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn train_filter(board: &mut Board) -> Vec<String> {
+    combine_space_lists(&mut vec![
+        board.filter_spaces_stronghold(Some(StrongholdClass::Fort), None, None),
+        match board.imperium {
+            Imperium::Fragmentation => board.filter_spaces_control(Some(Player::Dux)),
+            _ => board.filter_spaces_control(Some(Player::Civitates)),
+        },
+    ])
+}
+
+fn dux_march_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn intercept_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn dux_battle_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn saxon_raid_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn saxon_return_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn saxon_march_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn saxon_battle_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn scotti_raid_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn scotti_return_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn scotti_march_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+fn scotti_battle_filter(board: &mut Board) -> Vec<String> {
+    println!("{}", "DEBUG: Filter not yet implemented".yellow());
+    board.map.land.clone().into_keys().collect::<Vec<String>>()
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum SelectionOption {
+    Done,
+    Feat(Action),
+    CommandSpace(String),
+}
+
+impl fmt::Display for SelectionOption {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SelectionOption::Done => write!(f, "Done"),
+            SelectionOption::Feat(feat) => write!(f, "{}", feat),
+            SelectionOption::CommandSpace(space) => write!(f, "{}", space),
+        }
+    }
+}
+
+// Ohhhhhhhh right, I was separating because of multistage commands like Train, Muster, Raid
 // TODO: handle space limits (Raid)
 // TODO: Can Raid and other Commands be selected emptily?
 // TODO: Should in fact be using filters on spaces
-pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_allowed: bool) -> bool {
-    match command {
-        Action::Command { command_name, space: _, action } => {
-            let mut action_options: Vec<Action>;
+// TODO: seem to be making it limited when shouldn't (first acting)
+// TODO: Multiple levels of selection, for Intercept and Raid
+// TODO: During execution loop, automatically proceed when Done is only option left
+pub fn issue_command(
+    command: Action,
+    board: &mut Board,
+    limited: bool,
+    feat_allowed: bool,
+) -> bool {
+    match command.clone() {
+        Action::Command {
+            command_name,
+            space: _,
+            actions,
+            filter: _,
+        } => {
             let mut executed_command: bool = false;
             let mut executed_feat: bool = false;
+            let mut command_spaces: Vec<String> = vec![];
+            let mut feat_spaces: Vec<String> = vec![];
+            let mut selected_feat: Option<Action> = None;
 
             let prompt: String;
-            // Replace with function fetching appropriate feats
             if feat_allowed {
-                action_options = get_feats(command_name, board.imperium);
-                prompt = format!("Select a Feat or a space in which to {}", command_name);
-            } else {
-                action_options = vec![];
-                prompt = format!("Select a space in which to {}", command_name);
-            }
-            for space in board.map.land.keys() {
-                action_options.push(Action::Command {
-                    command_name,
-                    space: Some(space.clone()),
-                    action: action,
-                });
-            }
+                // If no selected feat, select from list of feats and command
+                // Else go straight to command
+                let mut action_options: Vec<Action> = get_feats(command_name, board.imperium);
+                action_options.push(command.clone());
 
-            loop {
-                let selection_ind: usize = Select::new()
+                prompt = format!("Select a Feat or proceed with {}", command_name);
+                let selected_action = action_options[Select::new()
                     .with_prompt(&prompt)
                     .items(&action_options)
                     .interact()
-                    .unwrap();
-                let selection: &Action = &action_options[selection_ind];
-                match selection {
-                    Action::Command { command_name, space, action } => {
-                        println!("{}ing in {}", command_name, space.as_ref().unwrap());
-                        (action)(board);
-                        action_options.remove(selection_ind);
-                        if !executed_command {
-                            let mut new_action_options: Vec<Action> = vec![Action::Done];
-                            new_action_options.append(&mut action_options);
-                            action_options = new_action_options;
-                            executed_command = true;
+                    .unwrap()]
+                .clone();
+                match selected_action {
+                    Action::Command {
+                        command_name,
+                        space: _,
+                        actions: _,
+                        filter: _,
+                    } => {
+                        command_spaces = select_action_spaces(command, limited, board);
+                        action_options = get_feats(command_name, board.imperium);
+                        action_options.push(Action::Done);
+                        let prompt = "Select Feat, or proceed to Command execution:";
+                        let mut action_options = get_feats(command_name, board.imperium);
+                        action_options.push(Action::Done);
+                        let selection = action_options[Select::new()
+                            .with_prompt(prompt)
+                            .items(&action_options)
+                            .interact()
+                            .unwrap()]
+                        .clone();
+                        match selection {
+                            Action::Feat { name: _, action: _ } => {
+                                selected_feat = Some(selection.clone());
+                                println!("DEBUG: selected_feat is {:?} from command first pick", selected_feat);
+                                feat_spaces = select_action_spaces(selected_action, limited, board);
+                            }
+                            Action::Done => {}
+                            _ => panic!(),
                         }
-                        if limited {
-                            break;
+                    },
+                    Action::Feat { name: _, action: _ } => {
+                        selected_feat = Some(selected_action.clone());
+                        println!("DEBUG: selected_feat is {:?} from feat first pick", selected_feat);
+                        feat_spaces = select_action_spaces(selected_action, limited, board);
+                        command_spaces = select_action_spaces(command, limited, board);
+                    }
+                    _ => panic!(),
+                };
+            } else {
+                command_spaces = select_action_spaces(command, limited, board);
+            }
+            println!("Moving on to resolving the actions in their chosen spaces...");
+            // TODO: if single command space jump straight to action
+            for command_step in actions {
+                let mut action_options = vec![];
+                let prompt: &str;
+                if selected_feat != None && !executed_feat {
+                    println!("DEBUG: adding {:?} to top of action options", selected_feat);
+                    action_options.push(SelectionOption::Feat(selected_feat.clone().unwrap()));
+                    prompt =
+                        "Select a space to execute your Command, or choose to execute your Feat:";
+                } else {
+                    prompt = "Select a space to execute your Command:";
+                }
+                action_options.append(
+                    &mut command_spaces
+                        .iter()
+                        .map(|s| SelectionOption::CommandSpace(s.clone()))
+                        .collect(),
+                );
+                loop {
+                    let selection_index: usize = Select::new()
+                        .with_prompt(prompt)
+                        .items(&action_options)
+                        .interact()
+                        .unwrap();
+                    let selection = &action_options[selection_index];
+                    match selection {
+                        SelectionOption::CommandSpace(space) => {
+                            // execute command in space
+                            // mark command as executed
+                            // remove space from action options
+                            (command_step)(space.clone(), board);
+                            if !executed_command {
+                                executed_command = true;
+                                action_options.push(SelectionOption::Done);
+                            }
+                            action_options.remove(selection_index);
                         }
+                        SelectionOption::Feat(feat) => {
+                            // execute feat
+                            // mark feat as executed
+                            // remove feat from action options
+                            println!("FEATS NOT YET IMPLEMENTED");
+                            println!("Mock executing {}", feat);
+                            if !executed_feat {
+                                executed_feat = true;
+                            }
+                            action_options.remove(selection_index);
+                        }
+                        SelectionOption::Done => break,
                     }
-                    Action::Feat { name, action } => {
-                        println!("Performing Feat {}", name);
-                        action_options.retain(|a| match a {
-                            Action::Feat { name: _, action: _ } => false,
-                            _ => true,
-                        });
-                        executed_feat = true;
-                    }
-                    Action::Done => break,
-                    _ => panic!("Illegal selection {}", selection),
                 }
             }
             return executed_feat;
@@ -241,134 +441,109 @@ pub fn issue_command(command: Action, board: &mut Board, limited: bool, feat_all
     }
 }
 
-fn civitates_march(board: &mut Board) {
-    println!("Civitates Marching");
+pub fn select_action_spaces(action: Action, limited: bool, board: &mut Board) -> Vec<String> {
+    match action {
+        Action::Command {
+            command_name,
+            space: _,
+            actions: _,
+            filter,
+        } => {
+            let mut selected_spaces: Vec<String> = vec![];
+            let space_options: Vec<String> = filter(board);
+            if !limited {
+                let multi_selection: Vec<usize> = MultiSelect::new()
+                    .with_prompt(format!("Select unlimited spaces for {} (a to (de)select all, space to de(select) one, enter to submit):", command_name))
+                    .items(&space_options)
+                    .interact()
+                    .unwrap();
+                for i in multi_selection {
+                    selected_spaces.push(space_options[i].clone());
+                }
+                selected_spaces.sort();
+            } else {
+                let selection = Select::new()
+                    .with_prompt(format!("Select space for {}:", command_name))
+                    .items(&space_options)
+                    .interact()
+                    .unwrap();
+                selected_spaces.push(space_options[selection].clone());
+            };
+            selected_spaces
+        }
+        Action::Feat { name, action: _ } => {
+            println!("FEATS NOT YET IMPLEMENTED");
+            println!("Returning no spaces for {}", name);
+            vec![]
+        },
+        _ => panic!(),
+    }
 }
 
-fn trade(board: &mut Board) {
-    println!("Trading");
+fn muster(space: String, board: &mut Board) {
+    println!("{}Mustering in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn civitates_battle(board: &mut Board) {
-    println!("Civitates Battling");
+fn civitates_march(space: String, board: &mut Board) {
+    println!("{}Civitates Marching in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn train(board: &mut Board) {
+fn trade(space: String, board: &mut Board) {
+    println!("{}Trading in {}", "UNIMPLEMENTED: ".yellow(), space);
+}
+
+fn civitates_battle(space: String, board: &mut Board) {
+    println!("{}Civitates Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
+}
+
+fn train(space: String, board: &mut Board) {
     println!("Training")
 }
 
-fn dux_march(board: &mut Board) {
-    println!("Dux Marching");
+fn dux_march(space: String, board: &mut Board) {
+    println!("{}Dux Marching in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn intercept(board: &mut Board) {
-    println!("Intercepting")
+fn intercept(space: String, board: &mut Board) {
+    println!("{}Intercepting in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn dux_battle(board: &mut Board) {
-    println!("Dux Battling");
+fn dux_battle(space: String, board: &mut Board) {
+    println!("{}Dux Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn saxon_raid(board: &mut Board) {
-    println!("Saxons Raiding");
+fn saxon_raid(space: String, board: &mut Board) {
+    println!("{}Saxons Raiding in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn saxon_return(board: &mut Board) {
-    println!("Saxons Returning");
+fn saxon_return(space: String, board: &mut Board) {
+    println!("{}Saxons Returning in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn saxon_march(board: &mut Board) {
-    println!("Saxons Marching");
+fn saxon_march(space: String, board: &mut Board) {
+    println!("{}Saxons Marching in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn saxon_battle(board: &mut Board) {
-    println!("Saxons Battling");
+fn saxon_battle(space: String, board: &mut Board) {
+    println!("{}Saxons Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn scotti_raid(board: &mut Board) {
-    println!("Scotti Raiding");
+fn scotti_raid(space: String, board: &mut Board) {
+    println!("{}Scotti Raiding in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn scotti_return(board: &mut Board) {
-    println!("Scotti Returning");
+fn scotti_return(space: String, board: &mut Board) {
+    println!("{}Scotti Returning in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn scotti_march(board: &mut Board) {
-    println!("Scotti Marching");
+fn scotti_march(space: String, board: &mut Board) {
+    println!("{}Scotti Marching in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-fn scotti_battle(board: &mut Board) {
-    println!("Scotti Battling");
+fn scotti_battle(space: String, board: &mut Board) {
+    println!("{}Scotti Battling in {}", "UNIMPLEMENTED: ".yellow(), space);
 }
 
-// TODO: Check available when adding units
-fn muster_units(loc: &mut Space, wealth: u8, avail: &mut Available) {
-    let mut cubes_to_place = 0;
-
-    for stronghold_site in loc.stronghold_sites.values() {
-        match stronghold_site.stronghold {
-            Some(s) => match s.class {
-                StrongholdClass::Hillfort => cubes_to_place += 1,
-                StrongholdClass::Town => cubes_to_place += 1,
-                _ => {}
-            },
-            None => {}
-        }
-    }
-
-    match loc.control {
-        Some(p) => {
-            if p == Player::Civitates {
-                cubes_to_place += loc.pop;
-            }
-        }
-        None => {}
-    }
-    // TODO: Make this an option
-    println!(
-        "Placing {} cubes. Place Comitates instead of Militia?\nEach Comitates costs 1 Wealth.\nCurrent Wealth: {}",
-        cubes_to_place, wealth
-    );
-    let mut num_com: Result<u8, std::num::ParseIntError>;
-    loop {
-        let comitates_to_place: String = Input::new()
-            .allow_empty(true)
-            .with_prompt("Enter number of Comitates to place instead of Militia (default: 0)")
-            .interact()
-            .unwrap();
-        if comitates_to_place == "" {
-            num_com = Ok(0);
-        } else {
-            num_com = comitates_to_place.parse::<u8>();
-        }
-        match num_com {
-            Ok(n) => {
-                if n > cubes_to_place {
-                    println!(
-                        "Error: tried placing {} Comitates but there are only {} cubes to place",
-                        n, cubes_to_place
-                    );
-                }
-                if n > wealth {
-                    println!(
-                        "Error: tried placing {} Comitates but may only spend {} Wealth",
-                        n, wealth
-                    );
-                } else {
-                    println!("Placed {} Comitates", num_com.unwrap());
-                    break;
-                }
-            }
-            _ => println!("Invalid input, must enter a non-negative integer"),
-        }
-    }
-
-    // resulting_loc
-    //     .units
-    //     .append(&mut Unit::con_militia(cubes_to_place));
-}
-
-// fn muster_strongholds(loc: Space) -> Space {}
 
 /*
 #[cfg(test)]

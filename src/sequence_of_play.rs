@@ -3,12 +3,12 @@ use std::collections::{HashMap, VecDeque};
 use std::fmt::{self};
 use tracing::{Level, event};
 
-use crate::commands::issue_command;
-
-use super::board::{Board, Imperium};
-use super::commands::{Command, get_faction_commands};
-use super::concepts::Player;
-use super::events::{Event, EventType};
+use crate::commands::{get_command, issue_command};
+use crate::action::Action;
+use crate::board::{Board, Imperium};
+use crate::commands::{Command, get_faction_commands};
+use crate::concepts::Player;
+use crate::events::{Event, EventType};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum ActionSelectionState {
@@ -19,41 +19,7 @@ enum ActionSelectionState {
     End,
 }
 
-#[derive(Clone, Debug)]
-pub enum Action {
-    Command {
-        command_name: Command,
-        space: Option<String>,
-        action: fn(&mut Board),
-    },
-    Feat {
-        name: &'static str,
-        action: fn(&mut Board),
-    },
-    Pass {
-        action: fn(Player, &mut Board),
-    },
-    Event {
-        name: &'static str,
-    },
-    Done,
-}
-impl fmt::Display for Action {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Action::Command { command_name, space, action: _ } => {
-                match space {
-                    Some(s) => write!(f, "{}", s),
-                    None => write!(f, "{}", command_name)
-                }
-            },
-            Action::Feat { name, action: _ } => write!(f, "{}", name),
-            Action::Pass { action: _ } => write!(f, "Pass"),
-            Action::Event { name } => write!(f, "{}", name),
-            Action::Done => write!(f, "Done"),
-        }
-    }
-}
+
 
 #[derive(Clone, Copy, Debug)]
 pub enum PlayerState {
@@ -186,7 +152,10 @@ impl SequenceOfPlay {
                     _ => println!("\nGetting second action from {}", player,),
                 }
                 let mut avaiable_actions: Vec<Action> = vec![PASS];
-                avaiable_actions.append(&mut get_faction_commands(player));
+                let faction_commands = get_faction_commands(player);
+                for c in faction_commands {
+                    avaiable_actions.push(get_command(c));
+                }
                 match self.action_selection_state {
                     ActionSelectionState::FirstSeeking => {
                         if self.current_event.unshaded != None {
@@ -223,7 +192,7 @@ impl SequenceOfPlay {
                 println!("Selected {}", selection);
 
                 match selection {
-                    Action::Command { command_name: _, space: _, action: _ } => match self.action_selection_state {
+                    Action::Command { command_name: _, space: _, actions: _ , filter: _} => match self.action_selection_state {
                         ActionSelectionState::FirstSeeking => {
                             let command_took_feat: bool = issue_command(selection, &mut self.board, false, true);
                             if command_took_feat {

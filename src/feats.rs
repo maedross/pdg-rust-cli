@@ -1,7 +1,7 @@
-use super::board::{Board, Imperium};
-use super::commands::Command;
-use super::concepts::{Player};
-use super::sequence_of_play::{Action};
+use crate::board::{Board, Imperium};
+use crate::commands::Command;
+use crate::concepts::{Player};
+use crate::action::Action;
 use std::fmt;
 
 pub fn get_feats(command: Command, imperium: Imperium) -> Vec<Action> {

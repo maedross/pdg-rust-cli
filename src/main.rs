@@ -4,6 +4,7 @@ use std::{collections::VecDeque, fs::{File, remove_file}, println, sync::Mutex};
 use tracing_subscriber::{fmt};
 
 use crate::board::build_scenario_from_yaml;
+mod action;
 mod board;
 mod commands;
 mod concepts;
