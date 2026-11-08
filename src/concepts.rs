@@ -1,6 +1,6 @@
 use colored::Colorize;
+use serde::{Deserialize, Serialize};
 use std::fmt;
-use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Player {
@@ -130,6 +130,24 @@ pub struct Unit {
 }
 
 impl Unit {
+    pub fn new_militia() -> Unit {
+        Unit {
+            class: UnitClass::Militia,
+            controller: Player::Civitates,
+            nationality: Some(Nationality::Briton),
+            plunder: false,
+        }
+    }
+
+    pub fn new_comitates() -> Unit {
+        Unit {
+            class: UnitClass::Comitates,
+            controller: Player::Civitates,
+            nationality: Some(Nationality::Briton),
+            plunder: false,
+        }
+    }
+    
     pub fn with_plunder(self) -> Unit {
         Unit {
             class: self.class,
@@ -140,7 +158,7 @@ impl Unit {
     }
 }
 
-pub const FORT: Stronghold = Stronghold{
+pub const FORT: Stronghold = Stronghold {
     controller: Player::Dux,
     nationality: None,
     class: StrongholdClass::Fort,
@@ -148,7 +166,7 @@ pub const FORT: Stronghold = Stronghold{
     garrison: 1,
     capacity: 2,
 };
-pub const HILLFORT: Stronghold = Stronghold{
+pub const HILLFORT: Stronghold = Stronghold {
     controller: Player::Civitates,
     nationality: Some(Nationality::Briton),
     class: StrongholdClass::Hillfort,
@@ -170,7 +188,7 @@ pub const SAXON_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };
 pub const SCOTTI_SETTLEMENT: Stronghold = Stronghold {
     controller: Player::Scotti,
@@ -178,7 +196,7 @@ pub const SCOTTI_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };
 pub const CIVITATES_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     controller: Player::Civitates,
@@ -186,7 +204,7 @@ pub const CIVITATES_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };
 pub const CIVITATES_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     controller: Player::Civitates,
@@ -194,7 +212,7 @@ pub const CIVITATES_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };
 pub const DUX_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     controller: Player::Dux,
@@ -202,7 +220,7 @@ pub const DUX_SAXON_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };
 pub const DUX_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     controller: Player::Dux,
@@ -210,5 +228,5 @@ pub const DUX_SCOTTI_FOEDERATI_SETTLEMENT: Stronghold = Stronghold {
     class: StrongholdClass::Settlement,
     escalade: 0.5,
     garrison: 0,
-    capacity: 2
+    capacity: 2,
 };

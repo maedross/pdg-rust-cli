@@ -1,13 +1,12 @@
-use super::concepts::{Player, Stronghold, Unit};
-use crate::{
-    board::{
-        Dominance::{Civilian, Military},
-        Imperium::{Autonomy, Fragmentation, RomanRule},
-    },
-    concepts::{
-        FORT, Force, HILLFORT, Nationality, SAXON_SETTLEMENT, SCOTTI_SETTLEMENT, StrongholdClass,
-        TOWN, UnitClass,
-    },
+use colored::Colorize;
+
+use crate::board::{
+    Dominance::{Civilian, Military},
+    Imperium::{Autonomy, Fragmentation, RomanRule},
+};
+use crate::concepts::{
+    FORT, Force, HILLFORT, Nationality, Player, SAXON_SETTLEMENT, SCOTTI_SETTLEMENT, Stronghold,
+    StrongholdClass, TOWN, Unit, UnitClass,
 };
 use dialoguer::Select;
 use serde::{Deserialize, Serialize};
@@ -191,6 +190,35 @@ impl Board {
 
     fn update_land_space(&mut self, space: Space) {
         self.map.land.insert(space.name.clone(), space);
+    }
+
+    pub fn amt_unit_in_play(&self, class: UnitClass, nationality: Option<Nationality>) -> u8 {
+        let mut amt_unit: u8 = self
+            .map
+            .land
+            .values()
+            .map(|s| s.amt_units(Some(class), None, nationality, None))
+            .sum();
+        match class {
+            UnitClass::Cavalry => amt_unit += self.available.cavalry,
+            UnitClass::Comitates => amt_unit += self.available.comitates,
+            UnitClass::Militia => amt_unit += self.available.militia,
+            UnitClass::Raider => {
+                amt_unit += match nationality.unwrap() {
+                    Nationality::Saxon => self.available.raiders_saxon,
+                    Nationality::Scotti => self.available.raiders_scotti,
+                    Nationality::Briton => panic!("Briton raiders aren't a thing, y'all"),
+                }
+            }
+            UnitClass::Warband => {
+                amt_unit += match nationality.unwrap() {
+                    Nationality::Saxon => self.available.warbands_saxon,
+                    Nationality::Scotti => self.available.warbands_scotti,
+                    Nationality::Briton => panic!("Briton warbands aren't a thing, y'all"),
+                }
+            }
+        }
+        amt_unit
     }
 }
 
@@ -453,6 +481,7 @@ impl<'a> Space {
                 "Could not place all {:?} from Available; you may choose to Voluntarily Remove some from the board to Available to be placed.\n{} remain to be placed.",
                 unit, yet_to_place
             );
+            // TODO: This should probably be reworked to use enum, not strings
             let mut valid_spaces: Vec<String> = board.filter_spaces_unit(
                 Some(unit.class),
                 Some(unit.controller),
@@ -465,7 +494,7 @@ impl<'a> Space {
                 .items(&valid_spaces)
                 .interact()
                 .unwrap();
-            if selection == 0 {
+            if valid_spaces[selection] == "Done" {
                 break;
             } else {
                 let mut selected_space: Space = board
@@ -502,6 +531,7 @@ impl<'a> Space {
                         selected_space =
                             selected_space.remove_unit(unit.with_plunder(), board, false);
                     }
+                    println!("Voluntarily removed 1 {:?}", unit);
                 }
                 selected_space = selected_space.remove_unit(unit, board, false);
                 board.update_land_space(selected_space);
@@ -514,13 +544,18 @@ impl<'a> Space {
 
     pub fn remove_unit(mut self, unit: Unit, board: &mut Board, casualties: bool) -> Space {
         // Removes one unit from a space to Available or Casualties
-
+        println!("{}", "DEBUG".yellow());
+        println!("\tRemoving {:?} from {}", unit, self.id);
+        println!("\t{} contains", self.id);
+        for u in self.units.iter() {
+            println!("\t\t{:?}", u);
+        }
         let index = self.units.iter().position(|u| *u == unit);
         match index {
             Some(i) => self.units.swap_remove(i),
             None => panic!(
-                "Trying to remove unit that does not exist in the space: {:?}",
-                unit
+                "Trying to remove unit that does not exist in the space: {:?}\nSpace contains: {:?}",
+                unit, self.units,
             ),
         };
         if casualties {
@@ -1215,5 +1250,15 @@ pub fn build_scenario_from_yaml(map_file_path: &str, scenario_file_path: &str) -
         niall_noigiallach,
         roads_maintained,
     );
+    for space in game_board.map.land.values() {
+        println!(
+            "{}{} contains:",
+            "DEBUG: ".yellow(),
+            space.id,
+        );
+        for unit in space.units.iter() {
+            println!("\t{:?}", unit);
+        }
+    }
     return game_board;
 }

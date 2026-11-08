@@ -2,10 +2,11 @@ use colored::Colorize;
 
 use crate::action::Action;
 use crate::board::{Board, Imperium, Space, StrongholdSiteType};
-use crate::concepts::{Player, StrongholdClass, UnitClass};
+use crate::concepts::{Player, StrongholdClass, Unit, UnitClass};
 use crate::feats::get_feats;
 
 use dialoguer::{MultiSelect, Select};
+use std::cmp::min;
 use std::fmt;
 use tracing::{Level, event, instrument};
 
@@ -501,7 +502,7 @@ impl fmt::Display for MusterVariants {
 }
 
 fn muster(space: String, board: &mut Board) {
-    let s: &Space = board.map.land.get(&space).unwrap();
+    let mut s: Space = board.map.land.get(&space).unwrap().clone();
     let mut friendly_pieces: u8 = s.amt_units(None, Some(Player::Civitates), None, None)
         + s.amt_strongholds(None, Some(Player::Civitates), None);
     let barbarian_pieces = s.amt_units(None, Some(Player::Saxons), None, None)
@@ -523,24 +524,67 @@ fn muster(space: String, board: &mut Board) {
 
     if can_place_hillfort || can_place_town {
         let muster_items = vec![MusterVariants::Troops, MusterVariants::Strongholds];
-        let muster_selection = muster_items[Select::new().with_prompt("Select a Muster option:").items(&muster_items).interact().unwrap()];
+        let muster_selection = muster_items[Select::new()
+            .with_prompt("Select a Muster option:")
+            .items(&muster_items)
+            .interact()
+            .unwrap()];
         match muster_selection {
-            MusterVariants::Troops => muster_troops(space, board),
+            MusterVariants::Troops => s = muster_troops(s, board),
             MusterVariants::Strongholds => muster_strongholds(space, board),
         }
     } else {
-        muster_troops(space, board);
+        s = muster_troops(s, board);
     }
 }
 
-fn muster_troops(space: String, board: &mut Board) {
-    println!("{}Mustering Troops in {}", "UNIMPLEMENTED: ".yellow(), space);
+fn muster_troops(mut space: Space, board: &mut Board) -> Space {
+    println!("{}{}", "Mustering Troops in ".blue(), space.id.blue());
+    let mut militia_to_place: u8;
+    let mut comitates_to_place: u8 = 0;
+    if space.control == Some(Player::Civitates) {
+        militia_to_place = space.pop
+            + space.amt_strongholds(Some(StrongholdClass::Hillfort), None, None)
+            + space.amt_strongholds(Some(StrongholdClass::Town), None, None);
+    } else {
+        militia_to_place = space.amt_strongholds(Some(StrongholdClass::Hillfort), None, None)
+            + space.amt_strongholds(Some(StrongholdClass::Town), None, None);
+    }
+    println!("{} Militia may be placed in {}", militia_to_place, space.id);
+    if board.edge_track.wealth > 0
+        && (!board
+            .filter_spaces_unit(Some(UnitClass::Comitates), None, None, None)
+            .is_empty()
+            || board.available.comitates > 0)
+    {
+        let comitates_amounts: Vec<u8> = (0..min(
+            militia_to_place,
+            board.amt_unit_in_play(UnitClass::Comitates, None),
+        ) + 1)
+            .collect::<Vec<u8>>();
+        comitates_to_place = comitates_amounts[Select::new()
+            .with_prompt("Select a number of Comitates to place instead of Militia:")
+            .items(&comitates_amounts)
+            .interact()
+            .unwrap()];
+        militia_to_place -= comitates_to_place;
+    }
+    println!("Adding {} Militia to {}", militia_to_place, space.id);
+    space = space.add_units(Unit::new_militia(), militia_to_place, board);
+    if comitates_to_place > 0 {
+        println!("Adding {} Comitates to {}", militia_to_place, space.id);
+        space = space.add_units(Unit::new_comitates(), comitates_to_place, board);
+    }
+    return space;
 }
 
 fn muster_strongholds(space: String, board: &mut Board) {
-    println!("{}Mustering Strongholds in {}", "UNIMPLEMENTED: ".yellow(), space);
+    println!(
+        "{}Mustering Strongholds in {}",
+        "UNIMPLEMENTED: ".yellow(),
+        space
+    );
 }
-
 
 fn civitates_march(space: String, board: &mut Board) {
     println!(
